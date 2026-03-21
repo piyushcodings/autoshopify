@@ -2517,16 +2517,15 @@ def admin_sitechecker_page():
 
 @app.route('/admin/sitechecker/test', methods=['GET'])
 def admin_sitechecker_test():
-    """Test if a site works like eternal-tattoo-supply (captcha detected but checkout succeeds)"""
+    """Test if a site works like eternal-tattoo-supply (cart add succeeds even with captcha)"""
     global sites_data
     
     try:
         site_url = request.args.get('url', '').strip()
         
         if not site_url:
-            return jsonify({"working": False, "error": "No URL provided"})
+            return jsonify({"working": False, "status": "dead", "error": "Site dead"})
         
-        # Test the site with REAL checkout simulation
         session = requests.Session()
         session.verify = False
         
@@ -2535,28 +2534,21 @@ def admin_sitechecker_test():
             checkout_url = f"{site_url}/checkout"
             response = session.get(checkout_url, timeout=10)
         except Exception as e:
-            return jsonify({
-                "working": False,
-                "status": "dead",
-                "error": "Site dead"
-            })
+            return jsonify({"working": False, "status": "dead", "error": "Site dead"})
         
         # Step 2: Check if captcha is present
         captcha_detected = 'recaptcha' in response.text.lower() or 'hcaptcha' in response.text.lower()
         
-        # Step 3: Try to solve captcha (but don't fail if it doesn't work)
+        # Step 3: Try to solve captcha (optional - some sites work without solving)
         captcha_solved = False
-        captcha_token = None
-        
         if captcha_detected:
             captcha_token = solve_captcha_auto(site_url, max_retries=2)
             if captcha_token:
                 captcha_solved = True
         
-        # Step 4: CRITICAL TEST - Try to create checkout and submit WITHOUT captcha
-        # This tests if the site behaves like eternal-tattoo-supply
+        # Step 4: CRITICAL TEST - Try to add product to cart
+        # This is the eternal-tattoo-supply test - cart must succeed!
         try:
-            # Get products
             products_url = f"{site_url}/products.json"
             products_resp = session.get(products_url, timeout=10)
             
@@ -2567,7 +2559,7 @@ def admin_sitechecker_test():
                     variant_id = product.get('variants', [{}])[0].get('id')
                     
                     if variant_id:
-                        # Add to cart
+                        # Add to cart - THIS IS THE KEY TEST!
                         cart_url = f"{site_url}/cart/add.js"
                         cart_resp = session.post(cart_url, 
                             data={'id': variant_id, 'quantity': 1},
@@ -2575,69 +2567,52 @@ def admin_sitechecker_test():
                         )
                         
                         if cart_resp.status_code == 200:
-                            # Cart add succeeded! This is a good sign
-                            # Site allows checkout even without captcha solving
-                            
+                            # ✅ CART ADD SUCCEEDED! This site works like eternal-tattoo-supply!
+                            # Add to database regardless of captcha status
                             if 'sites' not in sites_data:
                                 sites_data['sites'] = []
-                                
+                            
+                            # Determine captcha status
+                            if captcha_detected and captcha_solved:
+                                captcha_status = "captcha_solvable"
+                                response_msg = "Site working (Captcha solvable)"
+                            elif captcha_detected and not captcha_solved:
+                                captcha_status = "captcha_not_enforced"
+                                response_msg = "Site working (Like eternal-tattoo-supply)"
+                            else:
+                                captcha_status = "no_captcha"
+                                response_msg = "Site working (No captcha)"
+                            
                             sites_data['sites'].append({
                                 "url": site_url,
                                 "price": "0.00",
                                 "added_by": "sitechecker",
                                 "added_by_name": "Site Checker",
                                 "last_response": "Working",
-                                "captcha_status": "detected_but_not_enforced" if captcha_detected and not captcha_solved else "solvable" if captcha_solved else "none"
+                                "captcha_status": captcha_status,
+                                "cart_add_works": True
                             })
                             save_json(SITES_FILE, sites_data)
                             
                             return jsonify({
                                 "working": True,
                                 "status": "working",
-                                "response": "Site working (Like eternal-tattoo-supply)" if captcha_detected and not captcha_solved else "Site working",
+                                "response": response_msg,
                                 "auto_added": True,
                                 "captcha_detected": captcha_detected,
                                 "captcha_solved": captcha_solved,
-                                "checkout_works": True
+                                "cart_add_success": True
                             })
+            
+            # Cart add failed - site doesn't work like eternal-tattoo-supply
+            return jsonify({"working": False, "status": "dead", "error": "Site dead"})
+            
         except Exception as e:
-            pass
+            # Cart add failed
+            return jsonify({"working": False, "status": "dead", "error": "Site dead"})
         
-        # Fallback - if cart add failed, check if at least captcha was solved
-        if captcha_solved:
-            if 'sites' not in sites_data:
-                sites_data['sites'] = []
-                
-            sites_data['sites'].append({
-                "url": site_url,
-                "price": "0.00",
-                "added_by": "sitechecker",
-                "added_by_name": "Site Checker",
-                "last_response": "Working",
-                "captcha_status": "solvable"
-            })
-            save_json(SITES_FILE, sites_data)
-            
-            return jsonify({
-                "working": True,
-                "status": "working",
-                "response": "Site working (Captcha solvable)",
-                "auto_added": True
-            })
-        
-        # If we get here, site didn't pass tests
-        return jsonify({
-            "working": False,
-            "status": "dead",
-            "error": "Site dead"
-        })
-            
     except Exception as e:
-        return jsonify({
-            "working": False,
-            "status": "dead",
-            "error": "Site dead"
-        })
+        return jsonify({"working": False, "status": "dead", "error": "Site dead"})
 
 
 @app.route('/admin/dashboard', methods=['GET'])
