@@ -18,8 +18,15 @@ import os
 from urllib.parse import urljoin, urlparse
 import xml.etree.ElementTree as ET
 import hashlib
-import jwt
 from datetime import datetime, timedelta
+
+# Try to import JWT (optional for admin auth)
+try:
+    import jwt
+    JWT_AVAILABLE = True
+except:
+    JWT_AVAILABLE = False
+    print("⚠️ PyJWT not installed - admin auth will use session-based auth")
 
 # Try to import browser solver (optional)
 try:
@@ -63,7 +70,7 @@ def add_log(level, message, details=None):
         logger.info(f"{message} - {details}")
 
 # Add startup log
-add_log("INFO", "System started", {"version": "1.0.0", "captcha_solver": CAPTCHA_SOLVER_ENABLED})
+add_log("INFO", "System started", {"version": "1.0.0", "captcha_solver": CAPTCHA_SOLVER_ENABLED, "jwt_available": JWT_AVAILABLE})
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -2411,11 +2418,17 @@ def admin_login():
     password = data.get('password')
     
     if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-        # Generate JWT token
-        token = jwt.encode({
-            'username': username,
-            'exp': datetime.utcnow() + timedelta(hours=24)
-        }, SECRET_KEY, algorithm='HS256')
+        # Generate token (JWT if available, otherwise simple token)
+        if JWT_AVAILABLE:
+            token = jwt.encode({
+                'username': username,
+                'exp': datetime.utcnow() + timedelta(hours=24)
+            }, SECRET_KEY, algorithm='HS256')
+        else:
+            # Fallback to simple token
+            token = hashlib.sha256(f"{username}{SECRET_KEY}".encode()).hexdigest()
+        
+        add_log("INFO", "Admin login successful", {"username": username, "ip": request.remote_addr})
         
         return jsonify({
             "success": True,
@@ -2423,6 +2436,7 @@ def admin_login():
             "message": "Login successful"
         })
     else:
+        add_log("WARNING", "Admin login failed", {"username": username, "ip": request.remote_addr})
         return jsonify({
             "success": False,
             "error": "Invalid credentials"
