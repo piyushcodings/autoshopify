@@ -117,19 +117,23 @@
                     </div>
                 </div>
 
-                <!-- Charts Row -->
+                <!-- Charts Row - Fixed Height -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6" style="height: 400px;">
                         <h3 class="text-lg font-bold mb-4">
                             <i class="fas fa-chart-line text-blue-600 mr-2"></i>Weekly Activity
                         </h3>
-                        <canvas id="activityChart" height="200"></canvas>
+                        <div style="height: 300px;">
+                            <canvas id="activityChart"></canvas>
+                        </div>
                     </div>
-                    <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6" style="height: 400px;">
                         <h3 class="text-lg font-bold mb-4">
                             <i class="fas fa-chart-pie text-purple-600 mr-2"></i>Status Distribution
                         </h3>
-                        <canvas id="statusChart" height="200"></canvas>
+                        <div style="height: 300px;">
+                            <canvas id="statusChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
@@ -367,7 +371,8 @@
         let checkController = null;
         let history = JSON.parse(localStorage.getItem('userCheckHistory') || '[]');
         let stats = { total: 0, charged: 0, approved: 0, lowFunds: 0, declined: 0, captcha: 0 };
-        let activityChart, statusChart;
+        let activityChart = null;
+        let statusChart = null;
 
         // Navigation
         function showSection(section) {
@@ -376,33 +381,51 @@
             document.getElementById('apiSection').classList.add('hidden');
             
             document.getElementById(section + 'Section').classList.remove('hidden');
+            
+            if (section === 'dashboard') {
+                updateStats();
+            }
         }
 
         // Load history
         function loadHistory() {
             const tbody = document.getElementById('historyTable');
             if (history.length > 0) {
-                tbody.innerHTML = history.slice(0, 100).reverse().map((item, index) => `
-                    <tr class="border-t hover:bg-gray-50">
-                        <td class="px-4 py-3 text-sm">${new Date(item.time).toLocaleString()}</td>
-                        <td class="px-4 py-3 font-mono text-sm">${item.card.substring(0, 8)}******${item.card.substring(item.card.length - 4)}</td>
-                        <td class="px-4 py-3 text-sm">${item.shop.substring(0, 30)}...</td>
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-1 rounded text-xs font-semibold ${item.status === 'Approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                                ${item.status}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3 text-sm">${item.response}</td>
-                        <td class="px-4 py-3">
-                            <button onclick="retryCheck(${history.length - 1 - index})" class="text-blue-600 hover:text-blue-800 mr-2">
-                                <i class="fas fa-redo"></i>
-                            </button>
-                            <button onclick="deleteHistoryItem(${history.length - 1 - index})" class="text-red-600 hover:text-red-800">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
+                tbody.innerHTML = history.slice(0, 100).reverse().map((item, index) => {
+                    const actualIndex = history.length - 1 - index;
+                    let statusClass = 'bg-red-100 text-red-800';
+                    if (item.status === 'Approved') {
+                        if (item.response.includes('CHARGED') || item.response.includes('ORDER') || item.response.includes('THANK')) {
+                            statusClass = 'bg-green-100 text-green-800';
+                        } else {
+                            statusClass = 'bg-blue-100 text-blue-800';
+                        }
+                    }
+                    if (item.response.includes('INSUFFICIENT') || item.response.includes('LOW FUNDS')) {
+                        statusClass = 'bg-yellow-100 text-yellow-800';
+                    }
+                    return `
+                        <tr class="border-t hover:bg-gray-50">
+                            <td class="px-4 py-3 text-sm">${new Date(item.time).toLocaleString()}</td>
+                            <td class="px-4 py-3 font-mono text-sm">${item.card.substring(0, 8)}******${item.card.substring(item.card.length - 4)}</td>
+                            <td class="px-4 py-3 text-sm">${item.shop.substring(0, 30)}...</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-1 rounded text-xs font-semibold ${statusClass}">
+                                    ${item.status}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-sm">${item.response}</td>
+                            <td class="px-4 py-3">
+                                <button onclick="retryCheck(${actualIndex})" class="text-blue-600 hover:text-blue-800 mr-2" title="Retry">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                                <button onclick="deleteHistoryItem(${actualIndex})" class="text-red-600 hover:text-red-800" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
             }
             updateStats();
         }
@@ -410,7 +433,7 @@
         // Update stats
         function updateStats() {
             stats.total = history.length;
-            stats.charged = history.filter(h => h.status === 'Approved' && (h.response.includes('CHARGED') || h.response.includes('ORDER CONFIRM') || h.response.includes('THANK YOU'))).length;
+            stats.charged = history.filter(h => h.status === 'Approved' && (h.response.includes('CHARGED') || h.response.includes('ORDER') || h.response.includes('THANK'))).length;
             stats.approved = history.filter(h => h.status === 'Approved' && !h.response.includes('CHARGED')).length;
             stats.lowFunds = history.filter(h => h.response.includes('INSUFFICIENT') || h.response.includes('LOW FUNDS')).length;
             stats.declined = history.filter(h => h.status === 'Declined' && !h.response.includes('INSUFFICIENT')).length;
@@ -428,11 +451,20 @@
             initCharts();
         }
 
-        // Initialize charts
+        // Initialize charts (FIXED - destroy before recreate)
         function initCharts() {
-            const activityCtx = document.getElementById('activityChart').getContext('2d');
-            if (activityChart) activityChart.destroy();
+            const activityCtx = document.getElementById('activityChart');
+            const statusCtx = document.getElementById('statusChart');
             
+            // Destroy existing charts
+            if (activityChart) {
+                activityChart.destroy();
+            }
+            if (statusChart) {
+                statusChart.destroy();
+            }
+            
+            // Create new charts
             activityChart = new Chart(activityCtx, {
                 type: 'line',
                 data: {
@@ -441,15 +473,22 @@
                         label: 'Checks',
                         data: [12, 19, 3, 5, 2, 3, stats.total],
                         borderColor: 'rgb(102, 126, 234)',
-                        tension: 0.4
+                        tension: 0.4,
+                        fill: false
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'top' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
             });
 
-            const statusCtx = document.getElementById('statusChart').getContext('2d');
-            if (statusChart) statusChart.destroy();
-            
             statusChart = new Chart(statusCtx, {
                 type: 'doughnut',
                 data: {
@@ -459,7 +498,13 @@
                         backgroundColor: ['rgb(34, 197, 94)', 'rgb(59, 130, 246)', 'rgb(251, 191, 36)', 'rgb(239, 68, 68)']
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'bottom' }
+                    }
+                }
             });
         }
 
@@ -620,23 +665,6 @@
             a.download = 'check_history_' + new Date().toISOString().split('T')[0] + '.json';
             a.click();
             URL.revokeObjectURL(url);
-        }
-
-        function deleteHistoryItem(index) {
-            if (confirm('Delete this item?')) {
-                history.splice(index, 1);
-                localStorage.setItem('userCheckHistory', JSON.stringify(history));
-                loadHistory();
-            }
-        }
-
-        function retryCheck(index) {
-            const item = history[index];
-            if (item) {
-                document.getElementById('cc').value = item.card;
-                document.getElementById('site').value = item.shop;
-                showSection('dashboard');
-            }
         }
 
         function deleteHistoryItem(index) {
