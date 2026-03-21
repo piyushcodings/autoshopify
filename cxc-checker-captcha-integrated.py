@@ -4,7 +4,7 @@ Integrates Shopify Captcha Solver API for automatic captcha handling
 Support: https://t.me/streetfind
 """
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 import requests
 import json
 import uuid
