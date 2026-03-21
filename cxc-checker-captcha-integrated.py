@@ -2517,7 +2517,7 @@ def admin_sitechecker_page():
 
 @app.route('/admin/sitechecker/test', methods=['GET'])
 def admin_sitechecker_test():
-    """Test if a site works with captcha solver"""
+    """Test if a site works with captcha solver - simulates real checkout"""
     global sites_data
     
     try:
@@ -2526,31 +2526,29 @@ def admin_sitechecker_test():
         if not site_url:
             return jsonify({"working": False, "error": "No URL provided"})
         
-        # Test the site
+        # Test the site with a more thorough check
         session = requests.Session()
         session.verify = False
         
-        # Step 1: Try to access checkout
+        # Step 1: Access checkout page
         try:
             checkout_url = f"{site_url}/checkout"
             response = session.get(checkout_url, timeout=10)
         except Exception as e:
-            # Site is dead/unreachable
             return jsonify({
                 "working": False,
                 "status": "dead",
                 "error": "Site dead"
             })
         
-        # Step 2: Check if captcha is present
+        # Step 2: Check if captcha is present NOW
         captcha_detected = 'recaptcha' in response.text.lower() or 'hcaptcha' in response.text.lower()
         
         # Step 3: If captcha detected, try to solve it
         if captcha_detected:
             captcha_token = solve_captcha_auto(site_url, max_retries=2)
             if captcha_token:
-                # Site is working with captcha solved
-                # Auto-add to database
+                # Captcha solved - site is working
                 if 'sites' not in sites_data:
                     sites_data['sites'] = []
                     
@@ -2559,27 +2557,107 @@ def admin_sitechecker_test():
                     "price": "0.00",
                     "added_by": "sitechecker",
                     "added_by_name": "Site Checker",
-                    "last_response": "Working"
+                    "last_response": "Working",
+                    "captcha_status": "solvable"
                 })
                 save_json(SITES_FILE, sites_data)
                 
                 return jsonify({
                     "working": True,
                     "status": "working",
-                    "response": "Site working",
+                    "response": "Site working (Captcha solvable)",
                     "auto_added": True
                 })
             else:
-                # Captcha solving failed - site is dead for our purposes
-                # DO NOT add to database
+                # Captcha solving failed
                 return jsonify({
                     "working": False,
                     "status": "dead",
                     "error": "Site dead"
                 })
         else:
-            # No captcha required - site is working!
-            # Auto-add to database
+            # No captcha detected NOW, but might appear later
+            # Do a deeper check - try to add to cart and see if captcha appears
+            try:
+                # Get products
+                products_url = f"{site_url}/products.json"
+                products_resp = session.get(products_url, timeout=10)
+                
+                if products_resp.status_code == 200:
+                    products = products_resp.json().get('products', [])
+                    if products:
+                        # Try to add cheapest product to cart
+                        product = products[0]
+                        variant_id = product.get('variants', [{}])[0].get('id')
+                        
+                        if variant_id:
+                            cart_url = f"{site_url}/cart/add.js"
+                            cart_resp = session.post(cart_url, 
+                                data={'id': variant_id, 'quantity': 1},
+                                timeout=10
+                            )
+                            
+                            # Check cart response for captcha
+                            if cart_resp.status_code == 200:
+                                # Check if captcha appeared in cart response
+                                cart_captcha = 'recaptcha' in cart_resp.text.lower()
+                                
+                                if cart_captcha:
+                                    # Captcha appeared during cart add!
+                                    captcha_token = solve_captcha_auto(site_url, max_retries=2)
+                                    if captcha_token:
+                                        # Can solve captcha
+                                        if 'sites' not in sites_data:
+                                            sites_data['sites'] = []
+                                            
+                                        sites_data['sites'].append({
+                                            "url": site_url,
+                                            "price": "0.00",
+                                            "added_by": "sitechecker",
+                                            "added_by_name": "Site Checker",
+                                            "last_response": "Working",
+                                            "captcha_status": "dynamic_but_solvable"
+                                        })
+                                        save_json(SITES_FILE, sites_data)
+                                        
+                                        return jsonify({
+                                            "working": True,
+                                            "status": "working",
+                                            "response": "Site working (Dynamic captcha - solvable)",
+                                            "auto_added": True
+                                        })
+                                    else:
+                                        return jsonify({
+                                            "working": False,
+                                            "status": "dead",
+                                            "error": "Site dead"
+                                        })
+                                else:
+                                    # No captcha even during cart add - good site!
+                                    if 'sites' not in sites_data:
+                                        sites_data['sites'] = []
+                                        
+                                    sites_data['sites'].append({
+                                        "url": site_url,
+                                        "price": "0.00",
+                                        "added_by": "sitechecker",
+                                        "added_by_name": "Site Checker",
+                                        "last_response": "Working",
+                                        "captcha_status": "none_detected"
+                                    })
+                                    save_json(SITES_FILE, sites_data)
+                                    
+                                    return jsonify({
+                                        "working": True,
+                                        "status": "working",
+                                        "response": "Site working (No captcha)",
+                                        "auto_added": True,
+                                        "warning": "Captcha may appear during real use"
+                                    })
+            except Exception as e:
+                pass
+            
+            # Fallback - no captcha detected, add with warning
             if 'sites' not in sites_data:
                 sites_data['sites'] = []
                 
@@ -2588,15 +2666,17 @@ def admin_sitechecker_test():
                 "price": "0.00",
                 "added_by": "sitechecker",
                 "added_by_name": "Site Checker",
-                "last_response": "Working"
+                "last_response": "Working",
+                "captcha_status": "unknown"
             })
             save_json(SITES_FILE, sites_data)
             
             return jsonify({
                 "working": True,
                 "status": "working",
-                "response": "Site working",
-                "auto_added": True
+                "response": "Site working (Use with caution)",
+                "auto_added": True,
+                "warning": "Captcha may appear during real use"
             })
             
     except Exception as e:
