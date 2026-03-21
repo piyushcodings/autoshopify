@@ -2388,7 +2388,13 @@ def admin_dashboard():
 
 @app.route('/', methods=['GET'])
 def home_page():
-    """Beautiful home page with admin panel"""
+    """Redirect to admin login"""
+    return redirect('/admin')
+
+
+@app.route('/public', methods=['GET'])
+def public_page():
+    """Public checker page (optional)"""
     return render_template('index.html')
 
 
