@@ -2542,7 +2542,7 @@ def admin_sitechecker_test():
         except Exception as e:
             return jsonify({"working": False, "status": "dead", "error": "Site dead"})
         
-        # Step 2: Get products
+        # Step 2: Get products and check price
         try:
             products_url = f"{site_url}/products.json"
             products_resp = session.get(products_url, timeout=10)
@@ -2556,6 +2556,15 @@ def admin_sitechecker_test():
             
             product = products[0]
             variant_id = product.get('variants', [{}])[0].get('id')
+            
+            # Check if product has a VALID PRICE (not free, not 0)
+            price = product.get('variants', [{}])[0].get('price', '0')
+            try:
+                price_value = float(price)
+                if price_value <= 0:
+                    return jsonify({"working": False, "status": "dead", "error": "Site dead"})
+            except:
+                return jsonify({"working": False, "status": "dead", "error": "Site dead"})
             
             if not variant_id:
                 return jsonify({"working": False, "status": "dead", "error": "Site dead"})
