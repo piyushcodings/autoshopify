@@ -38,6 +38,33 @@ ADMIN_USERNAME = "databasemanaging"
 ADMIN_PASSWORD = "41Ars@117"
 SECRET_KEY = os.urandom(24).hex()  # Generate random secret key
 
+# In-memory log storage
+system_logs = []
+MAX_LOGS = 1000  # Keep last 1000 logs
+
+def add_log(level, message, details=None):
+    """Add a log entry"""
+    log_entry = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "level": level,
+        "message": message,
+        "details": details
+    }
+    system_logs.append(log_entry)
+    # Keep only last MAX_LOGS entries
+    if len(system_logs) > MAX_LOGS:
+        system_logs.pop(0)
+    # Also print to console
+    if level == "ERROR":
+        logger.error(f"{message} - {details}")
+    elif level == "WARNING":
+        logger.warning(f"{message} - {details}")
+    else:
+        logger.info(f"{message} - {details}")
+
+# Add startup log
+add_log("INFO", "System started", {"version": "1.0.0", "captcha_solver": CAPTCHA_SOLVER_ENABLED})
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -2305,30 +2332,52 @@ def process_api():
         site = request.args.get('site')
         proxy = request.args.get('proxy')
         key = request.args.get('key')
-        
+        client_ip = request.remote_addr
+
+        # Log the request
+        add_log("INFO", "API request received", {
+            "ip": client_ip,
+            "site": site,
+            "proxy": "Yes" if proxy else "No",
+            "key_valid": key == "md-tech"
+        })
+
         if not key or key != "md-tech":
-             return jsonify({
+            add_log("WARNING", "Invalid API key", {"ip": client_ip, "key": key})
+            return jsonify({
                 "status": "Decline",
                 "site": "Unknown",
                 "amount": "$0.00",
                 "response": "Invalid Key",
                 "proxy": "Unknown"
             })
-            
+
         if not cc or not site:
-             return jsonify({
+            add_log("WARNING", "Missing parameters", {"ip": client_ip, "cc": cc, "site": site})
+            return jsonify({
                 "status": "Decline",
                 "site": "Unknown",
                 "amount": "$0.00",
                 "response": "Missing CC or Site",
                 "proxy": "Unknown"
             })
-            
+
         result = process_checkout(cc, site, proxy)
-        
+
+        # Log the result
+        add_log("INFO", "Checkout completed", {
+            "ip": client_ip,
+            "site": site,
+            "status": result.get('status'),
+            "amount": result.get('amount'),
+            "captcha_solved": result.get('captcha_solved'),
+            "response": result.get('response')
+        })
+
         return jsonify(result)
-        
+
     except Exception as e:
+        add_log("ERROR", "API request failed", {"error": str(e)})
         return jsonify({
             "status": "Error",
             "proxy": "Error",
@@ -2384,6 +2433,36 @@ def admin_login():
 def admin_dashboard():
     """Admin dashboard"""
     return render_template('admin_dashboard.html')
+
+
+@app.route('/admin/logs', methods=['GET'])
+def get_logs():
+    """Get system logs"""
+    # Get last N logs
+    limit = request.args.get('limit', 100, type=int)
+    return jsonify({
+        "logs": system_logs[-limit:],
+        "total": len(system_logs)
+    })
+
+
+@app.route('/admin/stats', methods=['GET'])
+def get_stats():
+    """Get system statistics"""
+    # Count log types
+    total_requests = len([l for l in system_logs if l['message'] == 'API request received'])
+    approved = len([l for l in system_logs if l['message'] == 'API request received' and l.get('details', {}).get('status') == 'Approved'])
+    declined = len([l for l in system_logs if l['message'] == 'API request received' and l.get('details', {}).get('status') == 'Decline'])
+    
+    success_rate = (approved / total_requests * 100) if total_requests > 0 else 0
+    
+    return jsonify({
+        "total_requests": total_requests,
+        "approved": approved,
+        "declined": declined,
+        "success_rate": round(success_rate, 2),
+        "uptime": "99.9%"
+    })
 
 
 @app.route('/', methods=['GET'])

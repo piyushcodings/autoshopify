@@ -407,13 +407,86 @@
             alert('Stats refreshed!');
         }
 
-        // Refresh logs
-        function refreshLogs() {
-            document.getElementById('logsContent').textContent = 'Loading logs...';
-            // In production, fetch actual logs from server
-            setTimeout(() => {
-                document.getElementById('logsContent').textContent = 'Logs loaded successfully.\n\n[INFO] System running normally\n[INFO] Captcha solver enabled\n[INFO] Browser solver available';
-            }, 1000);
+        // Real-time logs
+        let autoRefreshLogs = true;
+        let logsInterval;
+
+        async function refreshLogs() {
+            try {
+                const response = await fetch('/admin/logs?limit=50');
+                const data = await response.json();
+                
+                const logsContent = document.getElementById('logsContent');
+                const logCount = document.getElementById('logCount') || {textContent: ''};
+                const lastUpdate = document.getElementById('lastUpdate') || {textContent: ''};
+                
+                if (data.logs && data.logs.length > 0) {
+                    const logsHtml = data.logs.map(log => {
+                        const time = new Date(log.timestamp).toLocaleTimeString();
+                        const levelColors = {
+                            'INFO': 'text-blue-400',
+                            'WARNING': 'text-yellow-400',
+                            'ERROR': 'text-red-400'
+                        };
+                        const levelColor = levelColors[log.level] || 'text-green-400';
+                        const details = log.details ? JSON.stringify(log.details) : '';
+                        return `<div class="mb-2">
+                            <span class="text-gray-500">[${time}]</span>
+                            <span class="${levelColor} font-bold">${log.level}</span>
+                            <span class="text-white">${log.message}</span>
+                            ${details ? `<span class="text-gray-400"> - ${details}</span>` : ''}
+                        </div>`;
+                    }).reverse().join('');
+                    
+                    logsContent.innerHTML = logsHtml;
+                    if (logCount.textContent !== undefined) logCount.textContent = `Total logs: ${data.total}`;
+                    if (lastUpdate.textContent !== undefined) lastUpdate.textContent = `Last update: ${new Date().toLocaleTimeString()}`;
+                } else {
+                    logsContent.innerHTML = '<div class="text-gray-400">No logs yet...</div>';
+                }
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+            }
+        }
+
+        function toggleAutoRefresh() {
+            autoRefreshLogs = !autoRefreshLogs;
+            const btn = document.getElementById('autoRefreshBtn');
+            
+            if (autoRefreshLogs) {
+                btn.innerHTML = '<i class="fas fa-clock mr-2"></i>Auto: ON';
+                btn.className = 'bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700';
+                startAutoRefresh();
+            } else {
+                btn.innerHTML = '<i class="fas fa-pause mr-2"></i>Auto: OFF';
+                btn.className = 'bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700';
+                stopAutoRefresh();
+            }
+        }
+
+        function startAutoRefresh() {
+            if (logsInterval) clearInterval(logsInterval);
+            logsInterval = setInterval(refreshLogs, 3000);
+        }
+
+        function stopAutoRefresh() {
+            if (logsInterval) clearInterval(logsInterval);
+        }
+
+        // Stats
+        async function refreshStats() {
+            try {
+                const response = await fetch('/admin/stats');
+                const data = await response.json();
+                
+                const totalReq = document.getElementById('totalRequests');
+                const successR = document.getElementById('successRate');
+                
+                if (totalReq) totalReq.textContent = data.total_requests || 0;
+                if (successR) successR.textContent = (data.success_rate || 0) + '%';
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            }
         }
 
         // Save settings
@@ -426,6 +499,12 @@
             navigator.clipboard.writeText('md-tech');
             alert('API key copied!');
         }
+
+        // Initialize
+        refreshLogs();
+        refreshStats();
+        startAutoRefresh();
+        setInterval(refreshStats, 10000);
 
         // Initialize
         checkHealth();
