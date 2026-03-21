@@ -1640,7 +1640,7 @@ def step4_submit_completion(session, checkout_token, session_token, queue_token,
 
     # Get captcha token from session cookies (if solved earlier)
     captcha_token = session.cookies.get('_captcha_token')
-    
+
     input_data = {
         "sessionInput": {"sessionToken": session_token},
         "queueToken": queue_token,
@@ -1706,8 +1706,11 @@ def step4_submit_completion(session, checkout_token, session_token, queue_token,
         "optionalDuties": {"buyerRefusesDuties": False},
         "cartMetafields": []
     }
-    
-    # Note: captchaToken is passed via session cookies, not in input object
+
+    # Add captcha token to input data if available
+    if captcha_token:
+        print(f"  [CAPTCHA] ✅ Using captcha token in submission")
+        input_data["captchaToken"] = captcha_token
 
     if delivery_expectation_lines:
         input_data["deliveryExpectations"] = {
