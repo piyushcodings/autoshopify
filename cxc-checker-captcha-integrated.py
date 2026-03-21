@@ -2571,8 +2571,8 @@ def admin_sitechecker_test():
         except Exception as e:
             return jsonify({"working": False, "status": "dead", "error": "Site dead"})
         
-        # Step 3: CRITICAL TEST - Add to cart
-        # This is what eternal-tattoo-supply allows!
+        # Step 3: CRITICAL TEST - Add to cart AND test checkout
+        # This catches sites where captcha is enforced
         try:
             cart_url = f"{site_url}/cart/add.js"
             cart_resp = session.post(cart_url, 
@@ -2581,23 +2581,44 @@ def admin_sitechecker_test():
             )
             
             if cart_resp.status_code != 200:
-                # Cart add failed - site doesn't work like eternal-tattoo-supply
                 return jsonify({"working": False, "status": "dead", "error": "Site dead"})
             
-            # ✅ CART ADD SUCCEEDED! This site works!
-            # Check checkout page for captcha
-            checkout_url = f"{site_url}/checkout"
+            # Cart add succeeded - now test if checkout works
+            # Get cart token
+            cart_data = cart_resp.json()
+            cart_token = cart_data.get('token')
+            
+            if not cart_token:
+                return jsonify({"working": False, "status": "dead", "error": "Site dead"})
+            
+            # Try to access checkout with cart token
+            checkout_url = f"{site_url}/{cart_token}/checkouts"
             checkout_resp = session.get(checkout_url, timeout=10)
+            
+            # Check if checkout page has captcha that's ENFORCED
+            # (captcha is present AND cart didn't bypass it)
             captcha_detected = 'recaptcha' in checkout_resp.text.lower() or 'hcaptcha' in checkout_resp.text.lower()
             
-            # Try to solve captcha (optional)
+            # Try to solve captcha
             captcha_solved = False
+            captcha_token = None
             if captcha_detected:
                 captcha_token = solve_captcha_auto(site_url, max_retries=2)
                 if captcha_token:
                     captcha_solved = True
             
-            # Add to database - cart add works!
+            # If captcha detected but NOT solved, check if checkout still works
+            # (like eternal-tattoo-supply where captcha is not enforced)
+            if captcha_detected and not captcha_solved:
+                # Check if we can still proceed (captcha not enforced)
+                # Look for payment button or shipping fields
+                has_payment_form = 'payment-button' in checkout_resp.text.lower() or 'credit-card' in checkout_resp.text.lower()
+                
+                if not has_payment_form:
+                    # Captcha is enforced - can't proceed
+                    return jsonify({"working": False, "status": "dead", "error": "Site dead"})
+            
+            # Add to database - site works!
             if 'sites' not in sites_data:
                 sites_data['sites'] = []
             
@@ -2619,7 +2640,8 @@ def admin_sitechecker_test():
                 "added_by_name": "Site Checker",
                 "last_response": "Working",
                 "captcha_status": captcha_status,
-                "cart_add_works": True
+                "cart_add_works": True,
+                "checkout_accessible": True
             })
             save_json(SITES_FILE, sites_data)
             
@@ -2634,7 +2656,6 @@ def admin_sitechecker_test():
             })
             
         except Exception as e:
-            # Cart add failed
             return jsonify({"working": False, "status": "dead", "error": "Site dead"})
         
     except Exception as e:
