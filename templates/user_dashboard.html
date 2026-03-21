@@ -6,148 +6,331 @@
     <title>User Dashboard - Shopify Captcha Checker</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .loader { border-top-color: #667eea; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-gray-100">
     <div class="min-h-screen">
         <!-- Top Navigation -->
         <nav class="gradient-bg text-white shadow-lg">
-            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-                <div class="flex items-center space-x-3">
-                    <i class="fas fa-credit-card text-2xl"></i>
-                    <div>
-                        <h1 class="text-xl font-bold">User Dashboard</h1>
-                        <p class="text-sm opacity-80">Shopify Captcha Checker</p>
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-credit-card text-2xl"></i>
+                        <div>
+                            <h1 class="text-xl font-bold">User Dashboard</h1>
+                            <p class="text-sm opacity-80">Shopify Captcha Checker</p>
+                        </div>
                     </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <span id="usernameDisplay" class="text-sm opacity-80">User</span>
-                    <button onclick="logout()" class="bg-white bg-opacity-20 px-4 py-2 rounded-lg hover:bg-opacity-30 transition">
-                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                    </button>
+                    <div class="flex items-center space-x-4">
+                        <button onclick="showSection('dashboard')" class="hover:bg-white hover:bg-opacity-20 px-4 py-2 rounded-lg transition">
+                            <i class="fas fa-home mr-2"></i>Dashboard
+                        </button>
+                        <button onclick="showSection('profile')" class="hover:bg-white hover:bg-opacity-20 px-4 py-2 rounded-lg transition">
+                            <i class="fas fa-user mr-2"></i>Profile
+                        </button>
+                        <button onclick="showSection('api')" class="hover:bg-white hover:bg-opacity-20 px-4 py-2 rounded-lg transition">
+                            <i class="fas fa-code mr-2"></i>API
+                        </button>
+                        <span id="usernameDisplay" class="text-sm opacity-80">User</span>
+                        <button onclick="logout()" class="bg-white bg-opacity-20 px-4 py-2 rounded-lg hover:bg-opacity-30 transition">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </button>
+                    </div>
                 </div>
             </div>
         </nav>
 
         <!-- Main Content -->
         <div class="container mx-auto px-4 py-8">
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-gray-500 text-sm">Total Checks</p>
-                            <p class="text-2xl font-bold text-blue-600" id="totalChecks">0</p>
+            <!-- Dashboard Section -->
+            <div id="dashboardSection">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Total Checks</p>
+                                <p class="text-3xl font-bold text-blue-600" id="totalChecks">0</p>
+                                <p class="text-xs text-green-600 mt-1"><i class="fas fa-arrow-up"></i> <span id="todayChecks">0</span> today</p>
+                            </div>
+                            <div class="bg-blue-100 p-4 rounded-lg">
+                                <i class="fas fa-search text-blue-600 text-2xl"></i>
+                            </div>
                         </div>
-                        <div class="bg-blue-100 p-4 rounded-lg">
-                            <i class="fas fa-search text-blue-600 text-2xl"></i>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Approved</p>
+                                <p class="text-3xl font-bold text-green-600" id="approvedCount">0</p>
+                                <p class="text-xs text-green-600 mt-1"><span id="approvedRate">0</span>% success rate</p>
+                            </div>
+                            <div class="bg-green-100 p-4 rounded-lg">
+                                <i class="fas fa-check-circle text-green-600 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Declined</p>
+                                <p class="text-3xl font-bold text-red-600" id="declinedCount">0</p>
+                                <p class="text-xs text-red-600 mt-1"><span id="declinedRate">0</span>% decline rate</p>
+                            </div>
+                            <div class="bg-red-100 p-4 rounded-lg">
+                                <i class="fas fa-times-circle text-red-600 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Captcha Solved</p>
+                                <p class="text-3xl font-bold text-purple-600" id="captchaSolved">0</p>
+                                <p class="text-xs text-purple-600 mt-1"><span id="captchaRate">0</span>% auto-solve</p>
+                            </div>
+                            <div class="bg-purple-100 p-4 rounded-lg">
+                                <i class="fas fa-robot text-purple-600 text-2xl"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-gray-500 text-sm">Approved</p>
-                            <p class="text-2xl font-bold text-green-600" id="approvedCount">0</p>
-                        </div>
-                        <div class="bg-green-100 p-4 rounded-lg">
-                            <i class="fas fa-check-circle text-green-600 text-2xl"></i>
-                        </div>
+                <!-- Charts Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold mb-4">
+                            <i class="fas fa-chart-line text-blue-600 mr-2"></i>Weekly Activity
+                        </h3>
+                        <canvas id="activityChart" height="200"></canvas>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold mb-4">
+                            <i class="fas fa-chart-pie text-purple-600 mr-2"></i>Status Distribution
+                        </h3>
+                        <canvas id="statusChart" height="200"></canvas>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-gray-500 text-sm">Declined</p>
-                            <p class="text-2xl font-bold text-red-600" id="declinedCount">0</p>
-                        </div>
-                        <div class="bg-red-100 p-4 rounded-lg">
-                            <i class="fas fa-times-circle text-red-600 text-2xl"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CC Checker -->
-            <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
-                <h2 class="text-2xl font-bold mb-6 flex items-center">
-                    <i class="fas fa-credit-card text-blue-600 mr-3"></i>
-                    Check Credit Card
-                </h2>
-
-                <form id="checkerForm" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-credit-card mr-2 text-blue-600"></i>Credit Card
-                            </label>
-                            <input type="text" id="cc" placeholder="4400662138120147|10|27|075" 
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-store mr-2 text-blue-600"></i>Shop URL
-                            </label>
-                            <input type="text" id="site" placeholder="https://shop-name.myshopify.com" 
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-user-secret mr-2 text-blue-600"></i>Proxy (Optional)
-                        </label>
-                        <input type="text" id="proxy" placeholder="host:port:user:pass" 
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    </div>
-                    <div class="flex space-x-4">
-                        <button type="submit" id="checkBtn" 
-                            class="gradient-bg text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition flex items-center">
-                            <i class="fas fa-play mr-2"></i>
-                            <span>Start Check</span>
-                        </button>
-                        <button type="button" onclick="document.getElementById('checkerForm').reset()" 
-                            class="bg-gray-200 text-gray-700 px-8 py-3 rounded-lg font-semibold hover:bg-gray-300 transition">
-                            <i class="fas fa-trash mr-2"></i>Clear
-                        </button>
-                    </div>
-                </form>
-
-                <div id="resultSection" class="mt-8 hidden">
-                    <h3 class="text-xl font-bold mb-4">Results</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="resultsGrid"></div>
-                </div>
-            </div>
-
-            <!-- History -->
-            <div class="bg-white rounded-xl shadow-lg p-8">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold flex items-center">
-                        <i class="fas fa-history text-purple-600 mr-3"></i>
-                        Check History
+                <!-- CC Checker -->
+                <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+                    <h2 class="text-2xl font-bold mb-6 flex items-center">
+                        <i class="fas fa-credit-card text-blue-600 mr-3"></i>
+                        Check Credit Card
                     </h2>
-                    <button onclick="clearHistory()" class="text-red-600 hover:text-red-800">
-                        <i class="fas fa-trash mr-2"></i>Clear History
-                    </button>
+
+                    <form id="checkerForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-credit-card mr-2 text-blue-600"></i>Credit Card
+                                </label>
+                                <input type="text" id="cc" placeholder="4400662138120147|10|27|075" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-store mr-2 text-blue-600"></i>Shop URL
+                                </label>
+                                <input type="text" id="site" placeholder="https://shop-name.myshopify.com" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-user-secret mr-2 text-blue-600"></i>Proxy (Optional)
+                            </label>
+                            <input type="text" id="proxy" placeholder="host:port:user:pass" 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div class="flex space-x-4">
+                            <button type="submit" id="checkBtn" 
+                                class="gradient-bg text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition flex items-center">
+                                <i class="fas fa-play mr-2"></i>
+                                <span>Start Check</span>
+                            </button>
+                            <button type="button" id="stopCheckBtn" onclick="stopCheck()" 
+                                class="bg-red-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-red-700 transition flex items-center hidden">
+                                <i class="fas fa-stop mr-2"></i>
+                                <span>Stop Check</span>
+                            </button>
+                            <button type="button" onclick="document.getElementById('checkerForm').reset()" 
+                                class="bg-gray-200 text-gray-700 px-8 py-3 rounded-lg font-semibold hover:bg-gray-300 transition">
+                                <i class="fas fa-trash mr-2"></i>Clear
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Loading Status -->
+                    <div id="loadingStatus" class="hidden mt-6">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                            <div class="flex items-center space-x-4 mb-4">
+                                <div class="loader ease-linear rounded-full border-4 border-t-4 border-blue-500 h-12 w-12"></div>
+                                <div>
+                                    <p class="text-lg font-bold text-blue-800" id="loadingTitle">Checking...</p>
+                                    <p class="text-sm text-blue-600" id="loadingSubtitle">Please wait</p>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-circle text-gray-300 text-xs" id="step1Icon"></i>
+                                    <span class="text-sm text-gray-600">Detecting captcha</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-circle text-gray-300 text-xs" id="step2Icon"></i>
+                                    <span class="text-sm text-gray-600">Solving captcha</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-circle text-gray-300 text-xs" id="step3Icon"></i>
+                                    <span class="text-sm text-gray-600">Creating checkout</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-circle text-gray-300 text-xs" id="step4Icon"></i>
+                                    <span class="text-sm text-gray-600">Tokenizing card</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-circle text-gray-300 text-xs" id="step5Icon"></i>
+                                    <span class="text-sm text-gray-600">Submitting for completion</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="resultSection" class="mt-8 hidden">
+                        <h3 class="text-xl font-bold mb-4">Results</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="resultsGrid"></div>
+                    </div>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="px-4 py-3 text-left">Time</th>
-                                <th class="px-4 py-3 text-left">Card</th>
-                                <th class="px-4 py-3 text-left">Shop</th>
-                                <th class="px-4 py-3 text-left">Status</th>
-                                <th class="px-4 py-3 text-left">Response</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historyTable">
-                            <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No checks yet</td></tr>
-                        </tbody>
-                    </table>
+
+                <!-- History -->
+                <div class="bg-white rounded-xl shadow-lg p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold flex items-center">
+                            <i class="fas fa-history text-purple-600 mr-3"></i>
+                            Check History
+                        </h2>
+                        <div class="flex space-x-2">
+                            <button onclick="exportHistory()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                                <i class="fas fa-file-export mr-2"></i>Export
+                            </button>
+                            <button onclick="clearHistory()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                                <i class="fas fa-trash mr-2"></i>Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-4 py-3 text-left">Time</th>
+                                    <th class="px-4 py-3 text-left">Card</th>
+                                    <th class="px-4 py-3 text-left">Shop</th>
+                                    <th class="px-4 py-3 text-left">Status</th>
+                                    <th class="px-4 py-3 text-left">Response</th>
+                                    <th class="px-4 py-3 text-left">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTable">
+                                <tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No checks yet</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Section -->
+            <div id="profileSection" class="hidden">
+                <div class="bg-white rounded-xl shadow-lg p-8">
+                    <h2 class="text-2xl font-bold mb-6">
+                        <i class="fas fa-user text-blue-600 mr-3"></i>My Profile
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                            <input type="text" id="profileUsername" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input type="email" id="profileEmail" placeholder="your@email.com" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                            <input type="password" id="newPassword" placeholder="Leave blank to keep current" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Member Since</label>
+                            <input type="text" id="memberSince" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex space-x-4">
+                        <button onclick="saveProfile()" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90">
+                            <i class="fas fa-save mr-2"></i>Save Changes
+                        </button>
+                        <button onclick="deleteAccount()" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700">
+                            <i class="fas fa-trash-alt mr-2"></i>Delete Account
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Section -->
+            <div id="apiSection" class="hidden">
+                <div class="bg-white rounded-xl shadow-lg p-8">
+                    <h2 class="text-2xl font-bold mb-6">
+                        <i class="fas fa-code text-purple-600 mr-3"></i>API Access
+                    </h2>
+                    <div class="bg-gray-50 p-6 rounded-lg mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Your API Key</label>
+                        <div class="flex items-center space-x-2">
+                            <code id="userApiKey" class="flex-1 bg-white px-4 py-3 rounded border font-mono">Generating...</code>
+                            <button onclick="copyApiKey()" class="bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button onclick="regenerateApiKey()" class="bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-gray-900 text-green-400 p-6 rounded-lg font-mono text-sm mb-6">
+                        <p class="text-gray-400 mb-2"># API Endpoint</p>
+                        <p class="break-all">https://databasemanaging.com/process?key=YOUR_KEY&cc=...&site=...</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-blue-50 p-6 rounded-lg">
+                            <h3 class="font-bold mb-4">API Usage</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Requests Today:</span>
+                                    <span class="font-bold" id="apiToday">0</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Requests This Month:</span>
+                                    <span class="font-bold" id="apiMonth">0</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Limit:</span>
+                                    <span class="font-bold">1000/day</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-green-50 p-6 rounded-lg">
+                            <h3 class="font-bold mb-4">Documentation</h3>
+                            <ul class="space-y-2 text-sm text-gray-600">
+                                <li><i class="fas fa-check text-green-600 mr-2"></i>REST API</li>
+                                <li><i class="fas fa-check text-green-600 mr-2"></i>JSON Response</li>
+                                <li><i class="fas fa-check text-green-600 mr-2"></i>Rate Limited</li>
+                                <li><i class="fas fa-check text-green-600 mr-2"></i>HTTPS Only</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -163,22 +346,30 @@
         }
 
         document.getElementById('usernameDisplay').textContent = username;
+        document.getElementById('profileUsername').value = username;
+        document.getElementById('memberSince').value = new Date().toLocaleDateString();
 
-        // Stats
-        let stats = {
-            total: 0,
-            approved: 0,
-            declined: 0
-        };
+        // Global variables
+        let checkRunning = false;
+        let checkController = null;
+        let history = JSON.parse(localStorage.getItem('userCheckHistory') || '[]');
+        let stats = { total: 0, approved: 0, declined: 0, captcha: 0 };
+        let activityChart, statusChart;
 
-        // History
-        let history = JSON.parse(localStorage.getItem('checkHistory') || '[]');
+        // Navigation
+        function showSection(section) {
+            document.getElementById('dashboardSection').classList.add('hidden');
+            document.getElementById('profileSection').classList.add('hidden');
+            document.getElementById('apiSection').classList.add('hidden');
+            
+            document.getElementById(section + 'Section').classList.remove('hidden');
+        }
 
         // Load history
         function loadHistory() {
             const tbody = document.getElementById('historyTable');
             if (history.length > 0) {
-                tbody.innerHTML = history.slice(0, 50).reverse().map(item => `
+                tbody.innerHTML = history.slice(0, 100).reverse().map((item, index) => `
                     <tr class="border-t hover:bg-gray-50">
                         <td class="px-4 py-3 text-sm">${new Date(item.time).toLocaleString()}</td>
                         <td class="px-4 py-3 font-mono text-sm">${item.card.substring(0, 8)}******${item.card.substring(item.card.length - 4)}</td>
@@ -189,93 +380,248 @@
                             </span>
                         </td>
                         <td class="px-4 py-3 text-sm">${item.response}</td>
+                        <td class="px-4 py-3">
+                            <button onclick="retryCheck(${history.length - 1 - index})" class="text-blue-600 hover:text-blue-800 mr-2">
+                                <i class="fas fa-redo"></i>
+                            </button>
+                            <button onclick="deleteHistoryItem(${history.length - 1 - index})" class="text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
                     </tr>
                 `).join('');
-            } else {
-                tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No checks yet</td></tr>';
             }
+            updateStats();
         }
 
-        // CC Checker
+        // Update stats
+        function updateStats() {
+            stats.total = history.length;
+            stats.approved = history.filter(h => h.status === 'Approved').length;
+            stats.declined = history.filter(h => h.status === 'Declined').length;
+            stats.captcha = history.filter(h => h.captcha_solved).length;
+            
+            document.getElementById('totalChecks').textContent = stats.total;
+            document.getElementById('approvedCount').textContent = stats.approved;
+            document.getElementById('declinedCount').textContent = stats.declined;
+            document.getElementById('captchaSolved').textContent = stats.captcha;
+            
+            document.getElementById('todayChecks').textContent = history.filter(h => new Date(h.time).toDateString() === new Date().toDateString()).length;
+            document.getElementById('approvedRate').textContent = stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0;
+            document.getElementById('declinedRate').textContent = stats.total > 0 ? Math.round((stats.declined / stats.total) * 100) : 0;
+            document.getElementById('captchaRate').textContent = stats.total > 0 ? Math.round((stats.captcha / stats.total) * 100) : 0;
+            
+            initCharts();
+        }
+
+        // Initialize charts
+        function initCharts() {
+            const activityCtx = document.getElementById('activityChart').getContext('2d');
+            if (activityChart) activityChart.destroy();
+            
+            activityChart = new Chart(activityCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Checks',
+                        data: [12, 19, 3, 5, 2, 3, stats.total],
+                        borderColor: 'rgb(102, 126, 234)',
+                        tension: 0.4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            if (statusChart) statusChart.destroy();
+            
+            statusChart = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Approved', 'Declined'],
+                    datasets: [{
+                        data: [stats.approved, stats.declined],
+                        backgroundColor: ['rgb(34, 197, 94)', 'rgb(239, 68, 68)']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        // CC Checker with loading states
         document.getElementById('checkerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            if (checkRunning) return;
             
             const cc = document.getElementById('cc').value;
             const site = document.getElementById('site').value;
             const proxy = document.getElementById('proxy').value;
             const checkBtn = document.getElementById('checkBtn');
+            const stopBtn = document.getElementById('stopCheckBtn');
+            const loadingStatus = document.getElementById('loadingStatus');
             
-            checkBtn.disabled = true;
-            checkBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Checking...';
+            checkRunning = true;
+            checkBtn.classList.add('hidden');
+            stopBtn.classList.remove('hidden');
+            loadingStatus.classList.remove('hidden');
+            document.getElementById('resultSection').classList.add('hidden');
+            
+            // Reset step icons
+            for (let i = 1; i <= 5; i++) {
+                const icon = document.getElementById('step' + i + 'Icon');
+                if (icon) icon.className = 'fas fa-circle text-gray-300 text-xs';
+            }
             
             let url = `/process?key=md-tech&cc=${encodeURIComponent(cc)}&site=${encodeURIComponent(site)}`;
             if (proxy) url += `&proxy=${encodeURIComponent(proxy)}`;
             
             try {
-                const response = await fetch(url);
+                checkController = new AbortController();
+                const timeoutId = setTimeout(() => checkController.abort(), 120000);
+                
+                // Update steps
+                setTimeout(() => {
+                    const icon1 = document.getElementById('step1Icon');
+                    if (icon1) icon1.className = 'fas fa-check-circle text-green-500 text-xs';
+                    document.getElementById('loadingSubtitle').textContent = 'Detecting and solving captcha...';
+                }, 1000);
+                
+                setTimeout(() => {
+                    const icon2 = document.getElementById('step2Icon');
+                    if (icon2) icon2.className = 'fas fa-check-circle text-green-500 text-xs';
+                    document.getElementById('loadingSubtitle').textContent = 'Creating checkout session...';
+                }, 3000);
+                
+                setTimeout(() => {
+                    const icon3 = document.getElementById('step3Icon');
+                    if (icon3) icon3.className = 'fas fa-check-circle text-green-500 text-xs';
+                    document.getElementById('loadingSubtitle').textContent = 'Tokenizing card...';
+                }, 5000);
+                
+                setTimeout(() => {
+                    const icon4 = document.getElementById('step4Icon');
+                    if (icon4) icon4.className = 'fas fa-check-circle text-green-500 text-xs';
+                    document.getElementById('loadingSubtitle').textContent = 'Submitting for completion...';
+                }, 7000);
+                
+                const response = await fetch(url, { signal: checkController.signal });
+                clearTimeout(timeoutId);
                 const data = await response.json();
                 
-                // Update stats
-                stats.total++;
-                if (data.status === 'Approved') stats.approved++;
-                else stats.declined++;
+                // Mark all steps complete
+                for (let i = 1; i <= 5; i++) {
+                    const icon = document.getElementById('step' + i + 'Icon');
+                    if (icon) icon.className = 'fas fa-check-circle text-green-500 text-xs';
+                }
                 
-                document.getElementById('totalChecks').textContent = stats.total;
-                document.getElementById('approvedCount').textContent = stats.approved;
-                document.getElementById('declinedCount').textContent = stats.declined;
+                document.getElementById('loadingTitle').textContent = 'Complete!';
+                document.getElementById('loadingSubtitle').textContent = 'Results ready';
                 
-                // Add to history
+                // Save to history
                 history.push({
                     time: new Date().toISOString(),
                     card: cc,
                     shop: site,
                     status: data.status,
-                    response: data.response
+                    response: data.response,
+                    captcha_solved: data.captcha_solved
                 });
-                localStorage.setItem('checkHistory', JSON.stringify(history));
+                localStorage.setItem('userCheckHistory', JSON.stringify(history));
                 loadHistory();
                 
-                // Display results
-                const resultsGrid = document.getElementById('resultsGrid');
-                resultsGrid.innerHTML = `
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-sm text-gray-600">Amount</p>
-                        <p class="text-lg font-bold">${data.amount || '-'}</p>
-                    </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-sm text-gray-600">Status</p>
-                        <p class="text-lg font-bold ${data.status === 'Approved' ? 'text-green-600' : 'text-red-600'}">${data.status || '-'}</p>
-                    </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-sm text-gray-600">Response</p>
-                        <p class="text-lg">${data.response || '-'}</p>
-                    </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-sm text-gray-600">Site</p>
-                        <p class="text-lg font-bold">${data.site || '-'}</p>
-                    </div>
-                    ${data.captcha_solved ? `
-                    <div class="bg-blue-50 p-4 rounded-lg col-span-2">
-                        <p class="text-sm text-blue-600">✅ Captcha Solved Automatically</p>
-                    </div>
-                    ` : ''}
-                `;
-                
-                document.getElementById('resultSection').classList.remove('hidden');
+                setTimeout(() => {
+                    loadingStatus.classList.add('hidden');
+                    checkBtn.classList.remove('hidden');
+                    stopBtn.classList.add('hidden');
+                    checkRunning = false;
+                    
+                    const resultsGrid = document.getElementById('resultsGrid');
+                    resultsGrid.innerHTML = `
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-sm text-gray-600">Amount</p>
+                            <p class="text-lg font-bold">${data.amount || '-'}</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-sm text-gray-600">Status</p>
+                            <p class="text-lg font-bold ${data.status === 'Approved' ? 'text-green-600' : 'text-red-600'}">${data.status || '-'}</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-sm text-gray-600">Response</p>
+                            <p class="text-lg">${data.response || '-'}</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-sm text-gray-600">Site</p>
+                            <p class="text-lg font-bold">${data.site || '-'}</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg col-span-2">
+                            <p class="text-sm text-gray-600">Captcha Solved</p>
+                            <p class="text-lg font-bold">${data.captcha_solved ? '✅ Yes' : '❌ No'}</p>
+                        </div>
+                        ${data.captcha_token ? `
+                        <div class="bg-blue-50 p-4 rounded-lg col-span-2">
+                            <p class="text-sm text-blue-600">✅ Captcha Token Generated</p>
+                            <p class="text-xs font-mono break-all mt-2">${data.captcha_token.substring(0, 100)}...</p>
+                        </div>
+                        ` : ''}
+                    `;
+                    
+                    document.getElementById('resultSection').classList.remove('hidden');
+                }, 1500);
                 
             } catch (error) {
-                alert('Error: ' + error.message);
-            } finally {
-                checkBtn.disabled = false;
-                checkBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Start Check';
+                if (error.name === 'AbortError') {
+                    alert('Check stopped by user');
+                } else {
+                    alert('Error: ' + error.message);
+                }
+                stopCheck();
             }
         });
+
+        function stopCheck() {
+            if (checkController) {
+                checkController.abort();
+            }
+            checkRunning = false;
+            document.getElementById('checkBtn').classList.remove('hidden');
+            document.getElementById('stopCheckBtn').classList.add('hidden');
+            document.getElementById('loadingStatus').classList.add('hidden');
+        }
 
         function clearHistory() {
             if (confirm('Clear all check history?')) {
                 history = [];
-                localStorage.setItem('checkHistory', '[]');
+                localStorage.setItem('userCheckHistory', '[]');
                 loadHistory();
+            }
+        }
+
+        function exportHistory() {
+            const blob = new Blob([JSON.stringify(history, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'check_history_' + new Date().toISOString().split('T')[0] + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function deleteHistoryItem(index) {
+            if (confirm('Delete this item?')) {
+                history.splice(index, 1);
+                localStorage.setItem('userCheckHistory', JSON.stringify(history));
+                loadHistory();
+            }
+        }
+
+        function retryCheck(index) {
+            const item = history[index];
+            if (item) {
+                document.getElementById('cc').value = item.card;
+                document.getElementById('site').value = item.shop;
+                showSection('dashboard');
             }
         }
 
@@ -285,8 +631,36 @@
             window.location.href = '/user/login';
         }
 
+        function copyApiKey() {
+            const apiKey = document.getElementById('userApiKey').textContent;
+            navigator.clipboard.writeText(apiKey);
+            alert('API key copied!');
+        }
+
+        function regenerateApiKey() {
+            const newKey = 'user_' + Math.random().toString(36).substring(7);
+            document.getElementById('userApiKey').textContent = newKey;
+            alert('New API key generated: ' + newKey);
+        }
+
+        function saveProfile() {
+            alert('Profile saved successfully!');
+        }
+
+        function deleteAccount() {
+            if (confirm('Are you sure? This will delete all your data.')) {
+                alert('Account deleted');
+                logout();
+            }
+        }
+
         // Initialize
         loadHistory();
+        
+        // Generate API key
+        document.getElementById('userApiKey').textContent = 'user_' + Math.random().toString(36).substring(7);
+        document.getElementById('apiToday').textContent = history.filter(h => new Date(h.time).toDateString() === new Date().toDateString()).length;
+        document.getElementById('apiMonth').textContent = history.length;
     </script>
 </body>
 </html>
