@@ -6,3 +6,4 @@ lxml==4.9.3
 selenium==4.15.2
 webdriver-manager==4.0.2
 urllib3==2.1.0
+PyJWT==2.8.0

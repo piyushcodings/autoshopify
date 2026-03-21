@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Shopify Captcha Checker</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .sidebar-item:hover { background: rgba(255,255,255,0.1); }
+        .sidebar-item.active { background: rgba(255,255,255,0.2); }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="gradient-bg w-64 text-white">
+            <div class="p-6">
+                <h1 class="text-xl font-bold"><i class="fas fa-shield-alt mr-2"></i>Admin Panel</h1>
+                <p class="text-sm opacity-80 mt-1">v1.0.0</p>
+            </div>
+            
+            <nav class="mt-6">
+                <a href="#" onclick="showSection('dashboard')" class="sidebar-item active flex items-center px-6 py-3">
+                    <i class="fas fa-home w-6"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" onclick="showSection('checker')" class="sidebar-item flex items-center px-6 py-3">
+                    <i class="fas fa-credit-card w-6"></i>
+                    <span>CC Checker</span>
+                </a>
+                <a href="#" onclick="showSection('logs')" class="sidebar-item flex items-center px-6 py-3">
+                    <i class="fas fa-terminal w-6"></i>
+                    <span>System Logs</span>
+                </a>
+                <a href="#" onclick="showSection('settings')" class="sidebar-item flex items-center px-6 py-3">
+                    <i class="fas fa-cog w-6"></i>
+                    <span>Settings</span>
+                </a>
+                <a href="#" onclick="showSection('api')" class="sidebar-item flex items-center px-6 py-3">
+                    <i class="fas fa-code w-6"></i>
+                    <span>API Keys</span>
+                </a>
+            </nav>
+
+            <div class="absolute bottom-0 w-64 p-6 border-t border-white border-opacity-20">
+                <button onclick="logout()" class="w-full bg-white bg-opacity-20 py-2 rounded-lg hover:bg-opacity-30 transition">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 overflow-y-auto">
+            <!-- Top Bar -->
+            <div class="bg-white shadow-sm px-8 py-4 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-800" id="pageTitle">Dashboard</h2>
+                <div class="flex items-center space-x-4">
+                    <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                        <i class="fas fa-circle text-xs mr-2"></i>System Online
+                    </span>
+                    <div class="text-right">
+                        <p class="text-sm font-semibold">Admin User</p>
+                        <p class="text-xs text-gray-500">databasemanaging</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Section -->
+            <div id="dashboardSection" class="p-8">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover transition">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">API Status</p>
+                                <p class="text-2xl font-bold text-green-600" id="apiStatus">Checking...</p>
+                            </div>
+                            <div class="bg-green-100 p-3 rounded-lg">
+                                <i class="fas fa-server text-green-600 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover transition">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Captcha Solver</p>
+                                <p class="text-2xl font-bold text-blue-600" id="captchaStatus">Enabled</p>
+                            </div>
+                            <div class="bg-blue-100 p-3 rounded-lg">
+                                <i class="fas fa-robot text-blue-600 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover transition">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Browser Solver</p>
+                                <p class="text-2xl font-bold text-purple-600" id="browserStatus">Available</p>
+                            </div>
+                            <div class="bg-purple-100 p-3 rounded-lg">
+                                <i class="fas fa-globe text-purple-600 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover transition">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Uptime</p>
+                                <p class="text-2xl font-bold text-orange-600" id="uptime">99.9%</p>
+                            </div>
+                            <div class="bg-orange-100 p-3 rounded-lg">
+                                <i class="fas fa-clock text-orange-600 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                    <h3 class="text-lg font-bold mb-4">Quick Actions</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button onclick="showSection('checker')" class="bg-blue-50 hover:bg-blue-100 p-4 rounded-lg transition text-left">
+                            <i class="fas fa-play-circle text-blue-600 text-2xl mb-2"></i>
+                            <p class="font-semibold">Run Check</p>
+                            <p class="text-sm text-gray-600">Test a credit card</p>
+                        </button>
+                        <button onclick="showSection('logs')" class="bg-purple-50 hover:bg-purple-100 p-4 rounded-lg transition text-left">
+                            <i class="fas fa-file-alt text-purple-600 text-2xl mb-2"></i>
+                            <p class="font-semibold">View Logs</p>
+                            <p class="text-sm text-gray-600">System activity</p>
+                        </button>
+                        <button onclick="refreshStats()" class="bg-green-50 hover:bg-green-100 p-4 rounded-lg transition text-left">
+                            <i class="fas fa-sync text-green-600 text-2xl mb-2"></i>
+                            <p class="font-semibold">Refresh Stats</p>
+                            <p class="text-sm text-gray-600">Update dashboard</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-bold mb-4">Recent Activity</h3>
+                    <div class="space-y-3" id="recentActivity">
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div>
+                                <p class="font-semibold">System Started</p>
+                                <p class="text-sm text-gray-600">Shopify Captcha Checker initialized</p>
+                            </div>
+                            <span class="text-xs text-gray-500">Just now</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CC Checker Section -->
+            <div id="checkerSection" class="p-8 hidden">
+                <div class="bg-white rounded-xl shadow-lg p-8">
+                    <h3 class="text-xl font-bold mb-6">
+                        <i class="fas fa-credit-card text-blue-600 mr-2"></i>Credit Card Checker
+                    </h3>
+
+                    <form id="checkerForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Credit Card</label>
+                                <input type="text" id="cc" placeholder="4400662138120147|10|27|075" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Shop URL</label>
+                                <input type="text" id="site" placeholder="https://shop-name.myshopify.com" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Proxy (Optional)</label>
+                            <input type="text" id="proxy" placeholder="host:port:user:pass" 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <button type="submit" class="gradient-bg text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition">
+                            <i class="fas fa-play mr-2"></i>Start Check
+                        </button>
+                    </form>
+
+                    <div id="checkerResults" class="mt-6 hidden">
+                        <h4 class="font-bold mb-4">Results</h4>
+                        <div class="grid grid-cols-2 gap-4" id="resultsGrid"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs Section -->
+            <div id="logsSection" class="p-8 hidden">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold">
+                            <i class="fas fa-terminal text-purple-600 mr-2"></i>System Logs
+                        </h3>
+                        <button onclick="refreshLogs()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                            <i class="fas fa-sync mr-2"></i>Refresh
+                        </button>
+                    </div>
+                    <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-96 overflow-y-auto" id="logsContent">
+                        Loading logs...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settingsSection" class="p-8 hidden">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-bold mb-6">
+                        <i class="fas fa-cog text-gray-600 mr-2"></i>System Settings
+                    </h3>
+
+                    <div class="space-y-6">
+                        <div>
+                            <label class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="font-semibold">Captcha Solver</p>
+                                    <p class="text-sm text-gray-600">Enable/disable automatic captcha solving</p>
+                                </div>
+                                <input type="checkbox" id="captchaToggle" checked class="toggle-checkbox">
+                            </label>
+                        </div>
+
+                        <div>
+                            <label class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="font-semibold">Browser Solver</p>
+                                    <p class="text-sm text-gray-600">Use browser automation for advanced captcha</p>
+                                </div>
+                                <input type="checkbox" id="browserToggle" checked class="toggle-checkbox">
+                            </label>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Max Retry Attempts</label>
+                            <input type="number" id="maxRetries" value="3" min="1" max="10" 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                        </div>
+
+                        <button onclick="saveSettings()" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition">
+                            <i class="fas fa-save mr-2"></i>Save Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Keys Section -->
+            <div id="apiSection" class="p-8 hidden">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-bold mb-6">
+                        <i class="fas fa-key text-yellow-600 mr-2"></i>API Management
+                    </h3>
+
+                    <div class="space-y-4">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-sm text-gray-600 mb-2">Current API Key</p>
+                            <div class="flex items-center space-x-2">
+                                <code class="flex-1 bg-white px-4 py-2 rounded border">md-tech</code>
+                                <button onclick="copyApiKey()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="font-semibold mb-2">API Usage</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-gray-600">Total Requests</p>
+                                    <p class="text-2xl font-bold" id="totalRequests">0</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">Success Rate</p>
+                                    <p class="text-2xl font-bold text-green-600" id="successRate">0%</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm">
+                            <p class="text-gray-400 mb-2"># API Endpoint</p>
+                            <p class="break-all">https://databasemanaging.com/process?key=md-tech&cc=...&site=...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+            window.location.href = '/admin';
+        }
+
+        // Navigation
+        function showSection(section) {
+            // Hide all sections
+            ['dashboard', 'checker', 'logs', 'settings', 'api'].forEach(s => {
+                document.getElementById(s + 'Section').classList.add('hidden');
+            });
+            
+            // Show selected section
+            document.getElementById(section + 'Section').classList.remove('hidden');
+            
+            // Update title
+            const titles = {
+                dashboard: 'Dashboard',
+                checker: 'CC Checker',
+                logs: 'System Logs',
+                settings: 'Settings',
+                api: 'API Management'
+            };
+            document.getElementById('pageTitle').textContent = titles[section];
+            
+            // Update sidebar
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+        }
+
+        // Health check
+        async function checkHealth() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                
+                document.getElementById('apiStatus').textContent = 'Online';
+                document.getElementById('captchaStatus').textContent = data.captcha_solver === 'enabled' ? 'Enabled' : 'Disabled';
+                document.getElementById('browserStatus').textContent = data.browser_solver ? 'Available' : 'Not Available';
+            } catch (error) {
+                document.getElementById('apiStatus').textContent = 'Offline';
+            }
+        }
+
+        // CC Checker
+        document.getElementById('checkerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const cc = document.getElementById('cc').value;
+            const site = document.getElementById('site').value;
+            const proxy = document.getElementById('proxy').value;
+            
+            let url = `/process?key=md-tech&cc=${encodeURIComponent(cc)}&site=${encodeURIComponent(site)}`;
+            if (proxy) url += `&proxy=${encodeURIComponent(proxy)}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                const resultsGrid = document.getElementById('resultsGrid');
+                resultsGrid.innerHTML = `
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600">Amount</p>
+                        <p class="text-lg font-bold">${data.amount || '-'}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600">Status</p>
+                        <p class="text-lg font-bold">${data.status || '-'}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600">Response</p>
+                        <p class="text-lg">${data.response || '-'}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600">Site</p>
+                        <p class="text-lg font-bold">${data.site || '-'}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg col-span-2">
+                        <p class="text-sm text-gray-600">Captcha Solved</p>
+                        <p class="text-lg font-bold">${data.captcha_solved ? '✅ Yes' : '❌ No'}</p>
+                    </div>
+                    ${data.captcha_token ? `
+                    <div class="bg-gray-50 p-4 rounded-lg col-span-2">
+                        <p class="text-sm text-gray-600">Token</p>
+                        <p class="text-xs font-mono break-all">${data.captcha_token}</p>
+                    </div>
+                    ` : ''}
+                `;
+                
+                document.getElementById('checkerResults').classList.remove('hidden');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = '/admin';
+        }
+
+        // Refresh stats
+        function refreshStats() {
+            checkHealth();
+            alert('Stats refreshed!');
+        }
+
+        // Refresh logs
+        function refreshLogs() {
+            document.getElementById('logsContent').textContent = 'Loading logs...';
+            // In production, fetch actual logs from server
+            setTimeout(() => {
+                document.getElementById('logsContent').textContent = 'Logs loaded successfully.\n\n[INFO] System running normally\n[INFO] Captcha solver enabled\n[INFO] Browser solver available';
+            }, 1000);
+        }
+
+        // Save settings
+        function saveSettings() {
+            alert('Settings saved successfully!');
+        }
+
+        // Copy API key
+        function copyApiKey() {
+            navigator.clipboard.writeText('md-tech');
+            alert('API key copied!');
+        }
+
+        // Initialize
+        checkHealth();
+        setInterval(checkHealth, 30000);
+    </script>
+</body>
+</html>

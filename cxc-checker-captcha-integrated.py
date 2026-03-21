@@ -17,6 +17,9 @@ import logging
 import os
 from urllib.parse import urljoin, urlparse
 import xml.etree.ElementTree as ET
+import hashlib
+import jwt
+from datetime import datetime, timedelta
 
 # Try to import browser solver (optional)
 try:
@@ -29,6 +32,11 @@ except:
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
+
+# Admin configuration
+ADMIN_USERNAME = "databasemanaging"
+ADMIN_PASSWORD = "41Ars@117"
+SECRET_KEY = os.urandom(24).hex()  # Generate random secret key
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -2338,6 +2346,44 @@ def health_check():
         "browser_solver": BROWSER_SOLVER_AVAILABLE,
         "timestamp": time.time()
     })
+
+
+@app.route('/admin', methods=['GET'])
+def admin_login_page():
+    """Admin login page"""
+    return render_template('admin_login.html')
+
+
+@app.route('/admin/login', methods=['POST'])
+def admin_login():
+    """Admin login handler"""
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    
+    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        # Generate JWT token
+        token = jwt.encode({
+            'username': username,
+            'exp': datetime.utcnow() + timedelta(hours=24)
+        }, SECRET_KEY, algorithm='HS256')
+        
+        return jsonify({
+            "success": True,
+            "token": token,
+            "message": "Login successful"
+        })
+    else:
+        return jsonify({
+            "success": False,
+            "error": "Invalid credentials"
+        }), 401
+
+
+@app.route('/admin/dashboard', methods=['GET'])
+def admin_dashboard():
+    """Admin dashboard"""
+    return render_template('admin_dashboard.html')
 
 
 @app.route('/', methods=['GET'])
