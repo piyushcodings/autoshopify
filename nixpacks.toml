@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["python311", "chromium", "chromedriver"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
+[phases.build]
+cmds = ["echo 'Building Shopify Captcha Checker...'"]
+
+[start]
+cmd = "gunicorn cxc-checker-captcha-integrated:app --bind 0.0.0.0:$PORT --workers 4 --timeout 120 --access-logfile -"

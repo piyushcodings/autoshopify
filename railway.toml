@@ -1,0 +1,34 @@
+# Railway Deployment Configuration
+# https://docs.railway.app/deployments
+
+[deploy]
+# Command to start the app
+startCommand = "python3 cxc-checker-captcha-integrated.py"
+
+# Healthcheck path
+healthcheckPath = "/health"
+
+# Restart policy
+restartPolicy = "on-failure"
+
+# Number of restarts before giving up
+restartMaxRetries = 3
+
+# Environment variables
+[deploy.env]
+PORT = "5000"
+HOST = "0.0.0.0"
+CAPTCHA_SOLVER_ENABLED = "true"
+MAX_CAPTCHA_RETRIES = "3"
+
+# Build configuration
+[build]
+# Python version
+pythonVersion = "3.11"
+
+# Install dependencies
+installCommand = "pip install -r requirements.txt"
+
+# Services needed
+[services]
+# No additional services needed (can add Redis/PostgreSQL if needed)
