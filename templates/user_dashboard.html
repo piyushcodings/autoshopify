@@ -30,13 +30,20 @@
                         <button onclick="showSection('dashboard')" class="hover:bg-white hover:bg-opacity-20 px-4 py-2 rounded-lg transition">
                             <i class="fas fa-home mr-2"></i>Dashboard
                         </button>
-                        <button onclick="showSection('profile')" class="hover:bg-white hover:bg-opacity-20 px-4 py-2 rounded-lg transition">
-                            <i class="fas fa-user mr-2"></i>Profile
+                        <button onclick="showSection('mass')" class="hover:bg-white hover:bg-opacity-20 px-4 py-2 rounded-lg transition">
+                            <i class="fas fa-layer-group mr-2"></i>Mass Check
+                        </button>
+                        <button onclick="showSection('credits')" class="hover:bg-white hover:bg-opacity-20 px-4 py-2 rounded-lg transition">
+                            <i class="fas fa-coins mr-2"></i>Credits
                         </button>
                         <button onclick="showSection('api')" class="hover:bg-white hover:bg-opacity-20 px-4 py-2 rounded-lg transition">
                             <i class="fas fa-code mr-2"></i>API
                         </button>
+                        <button onclick="showSection('profile')" class="hover:bg-white hover:bg-opacity-20 px-4 py-2 rounded-lg transition">
+                            <i class="fas fa-user mr-2"></i>Profile
+                        </button>
                         <span id="usernameDisplay" class="text-sm opacity-80">User</span>
+                        <span id="userCredits" class="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-sm font-bold">0</span>
                         <button onclick="logout()" class="bg-white bg-opacity-20 px-4 py-2 rounded-lg hover:bg-opacity-30 transition">
                             <i class="fas fa-sign-out-alt mr-2"></i>Logout
                         </button>
@@ -50,7 +57,7 @@
             <!-- Dashboard Section -->
             <div id="dashboardSection">
                 <!-- Stats Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
                     <div class="bg-white rounded-xl shadow-lg p-6">
                         <div class="flex items-center justify-between">
                             <div>
@@ -73,6 +80,19 @@
                             </div>
                             <div class="bg-green-100 p-4 rounded-lg">
                                 <i class="fas fa-dollar-sign text-green-600 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">3D Secure</p>
+                                <p class="text-3xl font-bold text-purple-600" id="secure3DCount">0</p>
+                                <p class="text-xs text-purple-600 mt-1">OTP Required</p>
+                            </div>
+                            <div class="bg-purple-100 p-4 rounded-lg">
+                                <i class="fas fa-shield-alt text-purple-600 text-2xl"></i>
                             </div>
                         </div>
                     </div>
@@ -117,7 +137,7 @@
                     </div>
                 </div>
 
-                <!-- Charts Row - Fixed Height -->
+                <!-- Charts Row -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                     <div class="bg-white rounded-xl shadow-lg p-6" style="height: 400px;">
                         <h3 class="text-lg font-bold mb-4">
@@ -137,7 +157,7 @@
                     </div>
                 </div>
 
-                <!-- CC Checker -->
+                <!-- Single CC Checker -->
                 <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
                     <h2 class="text-2xl font-bold mb-6 flex items-center">
                         <i class="fas fa-credit-card text-blue-600 mr-3"></i>
@@ -263,37 +283,133 @@
                 </div>
             </div>
 
-            <!-- Profile Section -->
-            <div id="profileSection" class="hidden">
+            <!-- Mass Check Section -->
+            <div id="massSection" class="hidden">
                 <div class="bg-white rounded-xl shadow-lg p-8">
-                    <h2 class="text-2xl font-bold mb-6">
-                        <i class="fas fa-user text-blue-600 mr-3"></i>My Profile
+                    <h2 class="text-2xl font-bold mb-6 flex items-center">
+                        <i class="fas fa-layer-group text-blue-600 mr-3"></i>
+                        Mass Check
                     </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-credit-card mr-2"></i>Credit Cards (one per line)
+                        </label>
+                        <textarea id="massCards" rows="8" placeholder="4400662138120147|10|27|075&#10;4400662138120148|11|28|123&#10;..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
-                            <input type="text" id="profileUsername" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-store mr-2"></i>Shop URL
+                            </label>
+                            <input type="text" id="massSite" placeholder="https://shop-name.myshopify.com" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                            <input type="email" id="profileEmail" placeholder="your@email.com" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-                            <input type="password" id="newPassword" placeholder="Leave blank to keep current" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Member Since</label>
-                            <input type="text" id="memberSince" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-user-secret mr-2"></i>Proxy (Optional)
+                            </label>
+                            <input type="text" id="massProxy" placeholder="host:port:user:pass" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
                         </div>
                     </div>
-                    <div class="mt-6 flex space-x-4">
-                        <button onclick="saveProfile()" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90">
-                            <i class="fas fa-save mr-2"></i>Save Changes
+                    <div class="flex space-x-4 mb-6">
+                        <button onclick="startMassCheck()" id="startMassBtn" class="gradient-bg text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90">
+                            <i class="fas fa-play mr-2"></i>Start Mass Check
                         </button>
-                        <button onclick="deleteAccount()" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700">
-                            <i class="fas fa-trash-alt mr-2"></i>Delete Account
+                        <button onclick="stopMassCheck()" id="stopMassBtn" class="bg-red-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-red-700 hidden">
+                            <i class="fas fa-stop mr-2"></i>Stop
                         </button>
+                    </div>
+                    <div id="massProgress" class="hidden">
+                        <div class="bg-gray-200 rounded-full h-4 mb-4">
+                            <div id="massProgressBar" class="gradient-bg h-4 rounded-full transition-all" style="width: 0%"></div>
+                        </div>
+                        <div class="grid grid-cols-5 gap-4 text-center">
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <p class="text-2xl font-bold text-blue-600" id="massTotal">0</p>
+                                <p class="text-sm text-gray-600">Total</p>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <p class="text-2xl font-bold text-green-600" id="massCharged">0</p>
+                                <p class="text-sm text-gray-600">Charged</p>
+                            </div>
+                            <div class="bg-purple-50 p-4 rounded-lg">
+                                <p class="text-2xl font-bold text-purple-600" id="mass3D">0</p>
+                                <p class="text-sm text-gray-600">3D</p>
+                            </div>
+                            <div class="bg-yellow-50 p-4 rounded-lg">
+                                <p class="text-2xl font-bold text-yellow-600" id="massLowFunds">0</p>
+                                <p class="text-sm text-gray-600">Low Funds</p>
+                            </div>
+                            <div class="bg-red-50 p-4 rounded-lg">
+                                <p class="text-2xl font-bold text-red-600" id="massDeclined">0</p>
+                                <p class="text-sm text-gray-600">Declined</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Credits Section -->
+            <div id="creditsSection" class="hidden">
+                <div class="bg-white rounded-xl shadow-lg p-8">
+                    <h2 class="text-2xl font-bold mb-6 flex items-center">
+                        <i class="fas fa-coins text-yellow-600 mr-3"></i>
+                        Credits & Billing
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white p-8 rounded-xl">
+                            <p class="text-yellow-100 text-sm mb-2">Available Credits</p>
+                            <p class="text-5xl font-bold" id="availableCredits">0</p>
+                            <p class="text-yellow-100 text-sm mt-4">1 credit = 1 check</p>
+                        </div>
+                        <div class="bg-white border-2 border-gray-200 p-8 rounded-xl">
+                            <p class="text-gray-600 text-sm mb-2">Credits Used</p>
+                            <p class="text-4xl font-bold text-gray-800" id="usedCredits">0</p>
+                            <p class="text-gray-500 text-sm mt-4">This month</p>
+                        </div>
+                        <div class="bg-white border-2 border-gray-200 p-8 rounded-xl">
+                            <p class="text-gray-600 text-sm mb-2">Daily Limit</p>
+                            <p class="text-4xl font-bold text-gray-800">1000</p>
+                            <p class="text-gray-500 text-sm mt-4">Resets in <span id="resetTime">23h 59m</span></p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-blue-50 p-6 rounded-xl">
+                            <h3 class="font-bold mb-4">Purchase Credits</h3>
+                            <div class="space-y-3">
+                                <button onclick="buyCredits(100, 9.99)" class="w-full bg-white border-2 border-blue-600 text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 flex justify-between items-center">
+                                    <span><i class="fas fa-coins mr-2"></i>100 Credits</span>
+                                    <span class="font-bold">$9.99</span>
+                                </button>
+                                <button onclick="buyCredits(500, 39.99)" class="w-full bg-white border-2 border-blue-600 text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 flex justify-between items-center">
+                                    <span><i class="fas fa-coins mr-2"></i>500 Credits</span>
+                                    <span class="font-bold">$39.99</span>
+                                </button>
+                                <button onclick="buyCredits(1000, 69.99)" class="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-white px-6 py-3 rounded-lg hover:opacity-90 flex justify-between items-center">
+                                    <span><i class="fas fa-crown mr-2"></i>1000 Credits (Best Value)</span>
+                                    <span class="font-bold">$69.99</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-green-50 p-6 rounded-xl">
+                            <h3 class="font-bold mb-4">Earn Free Credits</h3>
+                            <div class="space-y-3">
+                                <button onclick="earnCredits('daily', 10)" class="w-full bg-white border-2 border-green-600 text-green-600 px-6 py-3 rounded-lg hover:bg-green-50 flex justify-between items-center">
+                                    <span><i class="fas fa-calendar-day mr-2"></i>Daily Bonus</span>
+                                    <span class="font-bold">+10 Credits</span>
+                                </button>
+                                <button onclick="earnCredits('referral', 50)" class="w-full bg-white border-2 border-green-600 text-green-600 px-6 py-3 rounded-lg hover:bg-green-50 flex justify-between items-center">
+                                    <span><i class="fas fa-user-friends mr-2"></i>Refer Friend</span>
+                                    <span class="font-bold">+50 Credits</span>
+                                </button>
+                                <button onclick="earnCredits('watch', 5)" class="w-full bg-white border-2 border-green-600 text-green-600 px-6 py-3 rounded-lg hover:bg-green-50 flex justify-between items-center">
+                                    <span><i class="fas fa-video mr-2"></i>Watch Ad</span>
+                                    <span class="font-bold">+5 Credits</span>
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-4">* Limits apply to free credits</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -350,6 +466,41 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Profile Section -->
+            <div id="profileSection" class="hidden">
+                <div class="bg-white rounded-xl shadow-lg p-8">
+                    <h2 class="text-2xl font-bold mb-6">
+                        <i class="fas fa-user text-blue-600 mr-3"></i>My Profile
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                            <input type="text" id="profileUsername" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input type="email" id="profileEmail" placeholder="your@email.com" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                            <input type="password" id="newPassword" placeholder="Leave blank to keep current" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Member Since</label>
+                            <input type="text" id="memberSince" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex space-x-4">
+                        <button onclick="saveProfile()" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90">
+                            <i class="fas fa-save mr-2"></i>Save Changes
+                        </button>
+                        <button onclick="deleteAccount()" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700">
+                            <i class="fas fa-trash-alt mr-2"></i>Delete Account
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -369,16 +520,25 @@
         // Global variables
         let checkRunning = false;
         let checkController = null;
+        let massRunning = false;
+        let massStop = false;
         let history = JSON.parse(localStorage.getItem('userCheckHistory') || '[]');
-        let stats = { total: 0, charged: 0, approved: 0, lowFunds: 0, declined: 0, captcha: 0 };
+        let stats = { total: 0, charged: 0, secure3D: 0, approved: 0, lowFunds: 0, declined: 0 };
+        let credits = parseInt(localStorage.getItem('userCredits') || '100');
         let activityChart = null;
         let statusChart = null;
+
+        // Update credits display
+        document.getElementById('availableCredits').textContent = credits;
+        document.getElementById('userCredits').textContent = credits;
 
         // Navigation
         function showSection(section) {
             document.getElementById('dashboardSection').classList.add('hidden');
-            document.getElementById('profileSection').classList.add('hidden');
+            document.getElementById('massSection').classList.add('hidden');
+            document.getElementById('creditsSection').classList.add('hidden');
             document.getElementById('apiSection').classList.add('hidden');
+            document.getElementById('profileSection').classList.add('hidden');
             
             document.getElementById(section + 'Section').classList.remove('hidden');
             
@@ -397,6 +557,8 @@
                     if (item.status === 'Approved') {
                         if (item.response.includes('CHARGED') || item.response.includes('ORDER') || item.response.includes('THANK')) {
                             statusClass = 'bg-green-100 text-green-800';
+                        } else if (item.response.includes('3D') || item.response.includes('OTP')) {
+                            statusClass = 'bg-purple-100 text-purple-800';
                         } else {
                             statusClass = 'bg-blue-100 text-blue-800';
                         }
@@ -434,13 +596,14 @@
         function updateStats() {
             stats.total = history.length;
             stats.charged = history.filter(h => h.status === 'Approved' && (h.response.includes('CHARGED') || h.response.includes('ORDER') || h.response.includes('THANK'))).length;
-            stats.approved = history.filter(h => h.status === 'Approved' && !h.response.includes('CHARGED')).length;
+            stats.secure3D = history.filter(h => h.response.includes('3D') || h.response.includes('OTP')).length;
+            stats.approved = history.filter(h => h.status === 'Approved' && !h.response.includes('CHARGED') && !h.response.includes('3D')).length;
             stats.lowFunds = history.filter(h => h.response.includes('INSUFFICIENT') || h.response.includes('LOW FUNDS')).length;
             stats.declined = history.filter(h => h.status === 'Declined' && !h.response.includes('INSUFFICIENT')).length;
-            stats.captcha = history.filter(h => h.captcha_solved).length;
             
             document.getElementById('totalChecks').textContent = stats.total;
             document.getElementById('chargedCount').textContent = stats.charged;
+            document.getElementById('secure3DCount').textContent = stats.secure3D;
             document.getElementById('approvedCount').textContent = stats.approved;
             document.getElementById('lowFundsCount').textContent = stats.lowFunds;
             document.getElementById('declinedCount').textContent = stats.declined;
@@ -451,20 +614,14 @@
             initCharts();
         }
 
-        // Initialize charts (FIXED - destroy before recreate)
+        // Initialize charts
         function initCharts() {
             const activityCtx = document.getElementById('activityChart');
             const statusCtx = document.getElementById('statusChart');
             
-            // Destroy existing charts
-            if (activityChart) {
-                activityChart.destroy();
-            }
-            if (statusChart) {
-                statusChart.destroy();
-            }
+            if (activityChart) activityChart.destroy();
+            if (statusChart) statusChart.destroy();
             
-            // Create new charts
             activityChart = new Chart(activityCtx, {
                 type: 'line',
                 data: {
@@ -480,39 +637,36 @@
                 options: { 
                     responsive: true, 
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'top' }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
+                    plugins: { legend: { display: true, position: 'top' } },
+                    scales: { y: { beginAtZero: true } }
                 }
             });
 
             statusChart = new Chart(statusCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Charged', 'Approved', 'Low Funds', 'Declined'],
+                    labels: ['Charged', '3D Secure', 'Approved', 'Low Funds', 'Declined'],
                     datasets: [{
-                        data: [stats.charged, stats.approved, stats.lowFunds, stats.declined],
-                        backgroundColor: ['rgb(34, 197, 94)', 'rgb(59, 130, 246)', 'rgb(251, 191, 36)', 'rgb(239, 68, 68)']
+                        data: [stats.charged, stats.secure3D, stats.approved, stats.lowFunds, stats.declined],
+                        backgroundColor: ['rgb(34, 197, 94)', 'rgb(147, 51, 234)', 'rgb(59, 130, 246)', 'rgb(251, 191, 36)', 'rgb(239, 68, 68)']
                     }]
                 },
                 options: { 
                     responsive: true, 
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'bottom' }
-                    }
+                    plugins: { legend: { display: true, position: 'bottom' } }
                 }
             });
         }
 
-        // CC Checker with loading states
+        // Single CC Checker
         document.getElementById('checkerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            if (checkRunning) return;
+            if (checkRunning || credits <= 0) {
+                if (credits <= 0) alert('Insufficient credits! Please purchase more.');
+                return;
+            }
             
             const cc = document.getElementById('cc').value;
             const site = document.getElementById('site').value;
@@ -527,7 +681,6 @@
             loadingStatus.classList.remove('hidden');
             document.getElementById('resultSection').classList.add('hidden');
             
-            // Reset step icons
             for (let i = 1; i <= 5; i++) {
                 const icon = document.getElementById('step' + i + 'Icon');
                 if (icon) icon.className = 'fas fa-circle text-gray-300 text-xs';
@@ -540,7 +693,6 @@
                 checkController = new AbortController();
                 const timeoutId = setTimeout(() => checkController.abort(), 120000);
                 
-                // Update steps
                 setTimeout(() => {
                     const icon1 = document.getElementById('step1Icon');
                     if (icon1) icon1.className = 'fas fa-check-circle text-green-500 text-xs';
@@ -569,7 +721,6 @@
                 clearTimeout(timeoutId);
                 const data = await response.json();
                 
-                // Mark all steps complete
                 for (let i = 1; i <= 5; i++) {
                     const icon = document.getElementById('step' + i + 'Icon');
                     if (icon) icon.className = 'fas fa-check-circle text-green-500 text-xs';
@@ -578,7 +729,6 @@
                 document.getElementById('loadingTitle').textContent = 'Complete!';
                 document.getElementById('loadingSubtitle').textContent = 'Results ready';
                 
-                // Save to history
                 history.push({
                     time: new Date().toISOString(),
                     card: cc,
@@ -588,6 +738,12 @@
                     captcha_solved: data.captcha_solved
                 });
                 localStorage.setItem('userCheckHistory', JSON.stringify(history));
+                
+                credits--;
+                localStorage.setItem('userCredits', credits.toString());
+                document.getElementById('availableCredits').textContent = credits;
+                document.getElementById('userCredits').textContent = credits;
+                
                 loadHistory();
                 
                 setTimeout(() => {
@@ -640,15 +796,121 @@
         });
 
         function stopCheck() {
-            if (checkController) {
-                checkController.abort();
-            }
+            if (checkController) checkController.abort();
             checkRunning = false;
             document.getElementById('checkBtn').classList.remove('hidden');
             document.getElementById('stopCheckBtn').classList.add('hidden');
             document.getElementById('loadingStatus').classList.add('hidden');
         }
 
+        // Mass Check
+        async function startMassCheck() {
+            const cardsText = document.getElementById('massCards').value.trim();
+            const site = document.getElementById('massSite').value;
+            const proxy = document.getElementById('massProxy').value;
+            
+            if (!cardsText || !site) {
+                alert('Please enter cards and site URL');
+                return;
+            }
+            
+            const cards = cardsText.split('\n').filter(c => c.trim());
+            if (cards.length > credits) {
+                if (!confirm(`You have ${credits} credits but ${cards.length} cards. Continue with ${credits} cards?`)) return;
+            }
+            
+            massRunning = true;
+            massStop = false;
+            document.getElementById('startMassBtn').classList.add('hidden');
+            document.getElementById('stopMassBtn').classList.remove('hidden');
+            document.getElementById('massProgress').classList.remove('hidden');
+            
+            let charged = 0, secure3D = 0, lowFunds = 0, declined = 0;
+            
+            for (let i = 0; i < cards.length && !massStop; i++) {
+                if (credits <= 0) {
+                    alert('Out of credits!');
+                    break;
+                }
+                
+                const card = cards[i].trim();
+                document.getElementById('massTotal').textContent = cards.length;
+                document.getElementById('massProgressBar').style.width = `${((i + 1) / cards.length) * 100}%`;
+                
+                try {
+                    let url = `/process?key=md-tech&cc=${encodeURIComponent(card)}&site=${encodeURIComponent(site)}`;
+                    if (proxy) url += `&proxy=${encodeURIComponent(proxy)}`;
+                    
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    if (data.status === 'Approved') {
+                        if (data.response.includes('CHARGED') || data.response.includes('ORDER')) charged++;
+                        else if (data.response.includes('3D') || data.response.includes('OTP')) secure3D++;
+                        else declined++;
+                    } else if (data.response.includes('INSUFFICIENT')) lowFunds++;
+                    else declined++;
+                    
+                    document.getElementById('massCharged').textContent = charged;
+                    document.getElementById('mass3D').textContent = secure3D;
+                    document.getElementById('massLowFunds').textContent = lowFunds;
+                    document.getElementById('massDeclined').textContent = declined;
+                    
+                    history.push({
+                        time: new Date().toISOString(),
+                        card: card,
+                        shop: site,
+                        status: data.status,
+                        response: data.response,
+                        captcha_solved: data.captcha_solved
+                    });
+                    
+                    credits--;
+                    localStorage.setItem('userCredits', credits.toString());
+                    document.getElementById('availableCredits').textContent = credits;
+                    document.getElementById('userCredits').textContent = credits;
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    declined++;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            massRunning = false;
+            localStorage.setItem('userCheckHistory', JSON.stringify(history));
+            loadHistory();
+            
+            document.getElementById('startMassBtn').classList.remove('hidden');
+            document.getElementById('stopMassBtn').classList.add('hidden');
+            alert(`Mass check complete!\nCharged: ${charged}\n3D: ${secure3D}\nLow Funds: ${lowFunds}\nDeclined: ${declined}`);
+        }
+
+        function stopMassCheck() {
+            massStop = true;
+        }
+
+        // Credits functions
+        function buyCredits(amount, price) {
+            if (confirm(`Purchase ${amount} credits for $${price}?`)) {
+                credits += amount;
+                localStorage.setItem('userCredits', credits.toString());
+                document.getElementById('availableCredits').textContent = credits;
+                document.getElementById('userCredits').textContent = credits;
+                alert(`Successfully purchased ${amount} credits!`);
+            }
+        }
+
+        function earnCredits(type, amount) {
+            credits += amount;
+            localStorage.setItem('userCredits', credits.toString());
+            document.getElementById('availableCredits').textContent = credits;
+            document.getElementById('userCredits').textContent = credits;
+            alert(`Earned ${amount} credits! Total: ${credits}`);
+        }
+
+        // History functions
         function clearHistory() {
             if (confirm('Clear all check history?')) {
                 history = [];
@@ -715,11 +977,21 @@
 
         // Initialize
         loadHistory();
-        
-        // Generate API key
         document.getElementById('userApiKey').textContent = 'user_' + Math.random().toString(36).substring(7);
         document.getElementById('apiToday').textContent = history.filter(h => new Date(h.time).toDateString() === new Date().toDateString()).length;
         document.getElementById('apiMonth').textContent = history.length;
+        
+        // Update reset time countdown
+        setInterval(() => {
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+            const diff = tomorrow - now;
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            document.getElementById('resetTime').textContent = `${hours}h ${minutes}m`;
+        }, 60000);
     </script>
 </body>
 </html>
