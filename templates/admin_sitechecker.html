@@ -56,8 +56,8 @@
                     <button onclick="testMassSites()" id="testMassSitesBtn" class="gradient-bg text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90">
                         <i class="fas fa-play mr-2"></i>Test All Sites
                     </button>
-                    <button onclick="addWorkingSites()" id="addWorkingSitesBtn" class="bg-green-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700 hidden">
-                        <i class="fas fa-plus mr-2"></i>Add Working Sites
+                    <button onclick="stopMassSites()" id="stopMassSitesBtn" class="bg-red-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-red-700 hidden">
+                        <i class="fas fa-stop mr-2"></i>Stop Testing
                     </button>
                 </div>
                 <div id="massSiteProgress" class="hidden mt-4">
@@ -87,6 +87,8 @@
     <script>
         let testedSites = [];
         let workingSites = [];
+        let massTesting = false;
+        let stopMassTesting = false;
 
         async function testSingleSite() {
             const url = document.getElementById('testSiteUrl').value.trim();
@@ -97,7 +99,7 @@
 
             const btn = document.getElementById('testSiteBtn');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Checking...';
 
             try {
                 const response = await fetch(`/admin/sitechecker/test?url=${encodeURIComponent(url)}`);
@@ -105,7 +107,6 @@
 
                 const resultDiv = document.getElementById('singleSiteResult');
                 const resultContent = document.getElementById('singleSiteResultContent');
-                const addBtn = document.getElementById('addTestedSiteBtn');
 
                 resultDiv.classList.remove('hidden');
 
@@ -115,13 +116,12 @@
                         <div class="flex items-center">
                             <i class="fas fa-check-circle text-green-600 text-2xl mr-3"></i>
                             <div>
-                                <p class="font-bold text-green-800">✅ Working!</p>
-                                <p class="text-sm text-green-700">Captcha: ${result.captcha_detected ? 'Detected & Solved' : 'Not Required'}</p>
-                                <p class="text-sm text-green-700">Response: ${result.response}</p>
+                                <p class="font-bold text-green-800">✅ Site Working</p>
+                                <p class="text-sm text-green-700">${result.response}</p>
+                                ${result.auto_added ? '<p class="text-xs text-green-600 mt-1">✅ Auto-added to database</p>' : ''}
                             </div>
                         </div>
                     `;
-                    addBtn.classList.remove('hidden');
                     testedSites = [{url, ...result}];
                     workingSites = [{url, ...result}];
                 } else {
@@ -130,12 +130,11 @@
                         <div class="flex items-center">
                             <i class="fas fa-times-circle text-red-600 text-2xl mr-3"></i>
                             <div>
-                                <p class="font-bold text-red-800">❌ Not Working</p>
-                                <p class="text-sm text-red-700">Error: ${result.error || 'Captcha solving failed'}</p>
+                                <p class="font-bold text-red-800">❌ Site Dead</p>
+                                <p class="text-sm text-red-700">${result.error || 'Site unreachable'}</p>
                             </div>
                         </div>
                     `;
-                    addBtn.classList.add('hidden');
                     testedSites = [{url, ...result}];
                 }
             } catch (error) {
@@ -143,27 +142,6 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-play mr-2"></i>Test Site';
-            }
-        }
-
-        function addTestedSite() {
-            if (testedSites.length > 0 && testedSites[0].working) {
-                const site = testedSites[0];
-                fetch('/admin/sites', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({url: site.url, price: '0.00'})
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Site added successfully!');
-                        document.getElementById('singleSiteResult').classList.add('hidden');
-                        document.getElementById('testSiteUrl').value = '';
-                    } else {
-                        alert('Error: ' + data.error);
-                    }
-                });
             }
         }
 
@@ -181,12 +159,15 @@
             }
 
             const btn = document.getElementById('testMassSitesBtn');
-            const addBtn = document.getElementById('addWorkingSitesBtn');
+            const stopBtn = document.getElementById('stopMassSitesBtn');
             const progressDiv = document.getElementById('massSiteProgress');
             const resultsDiv = document.getElementById('massSiteResults');
 
+            massTesting = true;
+            stopMassTesting = false;
             btn.disabled = true;
-            addBtn.classList.add('hidden');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing...';
+            stopBtn.classList.remove('hidden');
             progressDiv.classList.remove('hidden');
             resultsDiv.innerHTML = '';
 
@@ -196,7 +177,7 @@
             let working = 0;
             let notWorking = 0;
 
-            for (let i = 0; i < urls.length; i++) {
+            for (let i = 0; i < urls.length && massTesting && !stopMassTesting; i++) {
                 const url = urls[i];
                 
                 document.getElementById('massSiteTotal').textContent = total;
@@ -228,7 +209,7 @@
                                     <i class="fas fa-times-circle text-red-600 mr-2"></i>
                                     <span class="text-sm text-red-800">${url}</span>
                                 </div>
-                                <span class="text-xs text-red-700">${result.error || 'Failed'}</span>
+                                <span class="text-xs text-red-700">${result.error || 'Dead'}</span>
                             </div>
                         `;
                     }
@@ -254,45 +235,21 @@
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
 
+            massTesting = false;
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-play mr-2"></i>Test All Sites';
+            stopBtn.classList.add('hidden');
 
-            if (workingSites.length > 0) {
-                addBtn.classList.remove('hidden');
+            if (stopMassTesting) {
+                alert(`Testing stopped!\nTested: ${i + 1}/${total}\nWorking: ${working}\nDead: ${notWorking}\n\nAll working sites have been auto-added to database.`);
+            } else {
+                alert(`Test complete!\nWorking: ${working}\nDead: ${notWorking}\n\nAll working sites have been auto-added to database.`);
             }
-
-            alert(`Test complete!\nWorking: ${working}\nNot Working: ${notWorking}`);
         }
 
-        function addWorkingSites() {
-            if (workingSites.length === 0) {
-                alert('No working sites to add');
-                return;
-            }
-
-            if (!confirm(`Add ${workingSites.length} working site(s) to your sites list?`)) {
-                return;
-            }
-
-            let added = 0;
-            workingSites.forEach(site => {
-                fetch('/admin/sites', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({url: site.url, price: '0.00'})
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) added++;
-                    if (added === workingSites.length) {
-                        alert(`Added ${added} working site(s)!`);
-                        document.getElementById('massSiteUrls').value = '';
-                        document.getElementById('massSiteResults').innerHTML = '';
-                        document.getElementById('massSiteProgress').classList.add('hidden');
-                        document.getElementById('addWorkingSitesBtn').classList.add('hidden');
-                    }
-                });
-            });
+        function stopMassSites() {
+            stopMassTesting = true;
+            massTesting = false;
         }
     </script>
 </body>

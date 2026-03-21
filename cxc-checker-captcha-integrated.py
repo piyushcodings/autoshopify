@@ -2502,8 +2502,30 @@ def admin_sitechecker_test():
         session.verify = False
         
         # Step 1: Try to access checkout
-        checkout_url = f"{site_url}/checkout"
-        response = session.get(checkout_url, timeout=10)
+        try:
+            checkout_url = f"{site_url}/checkout"
+            response = session.get(checkout_url, timeout=10)
+        except Exception as e:
+            # Site is dead/unreachable
+            error_msg = str(e).lower()
+            if 'name resolution' in error_msg or 'failed to resolve' in error_msg:
+                return jsonify({
+                    "working": False,
+                    "status": "dead",
+                    "error": "Site dead (DNS failed)"
+                })
+            elif 'connection' in error_msg or 'timeout' in error_msg:
+                return jsonify({
+                    "working": False,
+                    "status": "dead",
+                    "error": "Site dead (Connection failed)"
+                })
+            else:
+                return jsonify({
+                    "working": False,
+                    "status": "dead",
+                    "error": f"Site dead ({str(e)[:50]})"
+                })
         
         # Step 2: Check if captcha is present
         captcha_detected = 'recaptcha' in response.text.lower() or 'hcaptcha' in response.text.lower()
@@ -2512,31 +2534,59 @@ def admin_sitechecker_test():
         if captcha_detected:
             captcha_token = solve_captcha_auto(site_url, max_retries=2)
             if captcha_token:
+                # Site is working with captcha solved
+                # Auto-add to database
+                sites_data['sites'].append({
+                    "url": site_url,
+                    "price": "0.00",
+                    "added_by": "sitechecker",
+                    "added_by_name": "Site Checker",
+                    "last_response": "Working"
+                })
+                save_json(SITES_FILE, sites_data)
+                
                 return jsonify({
                     "working": True,
+                    "status": "working",
                     "captcha_detected": True,
                     "captcha_solved": True,
-                    "response": "Captcha solved successfully"
+                    "response": "Site working (Captcha solved)",
+                    "auto_added": True
                 })
             else:
+                # Captcha solving failed - site is dead for our purposes
                 return jsonify({
                     "working": False,
+                    "status": "dead",
                     "captcha_detected": True,
                     "captcha_solved": False,
-                    "error": "Captcha solving failed"
+                    "error": "Site dead (Captcha solving failed)"
                 })
         else:
-            # No captcha required
+            # No captcha required - site is working!
+            # Auto-add to database
+            sites_data['sites'].append({
+                "url": site_url,
+                "price": "0.00",
+                "added_by": "sitechecker",
+                "added_by_name": "Site Checker",
+                "last_response": "Working"
+            })
+            save_json(SITES_FILE, sites_data)
+            
             return jsonify({
                 "working": True,
+                "status": "working",
                 "captcha_detected": False,
                 "captcha_solved": False,
-                "response": "No captcha required"
+                "response": "Site working",
+                "auto_added": True
             })
             
     except Exception as e:
         return jsonify({
             "working": False,
+            "status": "dead",
             "error": str(e)
         })
 
