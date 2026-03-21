@@ -49,6 +49,33 @@ ADMIN_USERNAME = "databasemanaging"
 ADMIN_PASSWORD = "41Ars@117"
 SECRET_KEY = os.urandom(24).hex()  # Generate random secret key
 
+# Data files
+SITES_FILE = "sites.json"
+PROXIES_FILE = "proxies.json"
+STATS_FILE = "stats.json"
+
+# Helper functions
+def save_json(filename, data):
+    """Save data to JSON file"""
+    try:
+        with open(filename, 'w') as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        logger.error(f"Error saving {filename}: {e}")
+
+def load_json(filename, default=None):
+    """Load data from JSON file"""
+    try:
+        with open(filename, 'r') as f:
+            return json.load(f)
+    except:
+        return default if default else {}
+
+# Initialize data stores
+sites_data = load_json(SITES_FILE, {"sites": []})
+proxies_data = load_json(PROXIES_FILE, {"proxies": []})
+stats_data = load_json(STATS_FILE, {"total_requests": 0, "success_rate": 0})
+
 # In-memory log storage
 system_logs = []
 MAX_LOGS = 1000  # Keep last 1000 logs
