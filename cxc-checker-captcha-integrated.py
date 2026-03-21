@@ -40,6 +40,10 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
 
+# Configure logging FIRST
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Admin configuration
 ADMIN_USERNAME = "databasemanaging"
 ADMIN_PASSWORD = "41Ars@117"
@@ -62,19 +66,18 @@ def add_log(level, message, details=None):
     if len(system_logs) > MAX_LOGS:
         system_logs.pop(0)
     # Also print to console
-    if level == "ERROR":
-        logger.error(f"{message} - {details}")
-    elif level == "WARNING":
-        logger.warning(f"{message} - {details}")
-    else:
-        logger.info(f"{message} - {details}")
+    try:
+        if level == "ERROR":
+            logger.error(f"{message} - {details}")
+        elif level == "WARNING":
+            logger.warning(f"{message} - {details}")
+        else:
+            logger.info(f"{message} - {details}")
+    except:
+        pass  # Ignore if logger not ready yet
 
-# Add startup log
-add_log("INFO", "System started", {"version": "1.0.0", "captcha_solver": CAPTCHA_SOLVER_ENABLED, "jwt_available": JWT_AVAILABLE})
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Add startup log (after logger is configured)
+add_log("INFO", "System starting", {"version": "1.0.0"})
 
 # ============================================
 # CAPTCHA SOLVER INTEGRATION (BUILT-IN - NO EXTERNAL API)
@@ -83,6 +86,9 @@ logger = logging.getLogger(__name__)
 CAPTCHA_SOLVER_ENABLED = True
 MAX_CAPTCHA_RETRIES = 3
 CAPTCHA_RETRY_DELAY = 2
+
+# Log system ready
+add_log("INFO", "System ready", {"captcha_solver": CAPTCHA_SOLVER_ENABLED, "jwt_available": JWT_AVAILABLE})
 
 def detect_site_key_from_page(store_url, timeout=10):
     """Detect captcha site key from store page (checkout page for better detection)"""
