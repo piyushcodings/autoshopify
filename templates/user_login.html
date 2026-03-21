@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Login - Shopify Captcha Checker</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <div class="text-center mb-8">
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-user text-white text-3xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-800">User Login</h1>
+            <p class="text-gray-600 mt-2">Shopify Captcha Checker</p>
+        </div>
+
+        <form id="loginForm" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-user mr-2 text-blue-600"></i>Username
+                </label>
+                <input type="text" id="username" placeholder="Enter username" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" required>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-lock mr-2 text-blue-600"></i>Password
+                </label>
+                <input type="password" id="password" placeholder="Enter password" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" required>
+            </div>
+
+            <div id="errorMessage" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span id="errorText">Invalid credentials</span>
+            </div>
+
+            <button type="submit" id="loginBtn" 
+                class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:opacity-90 transition flex items-center justify-center">
+                <i class="fas fa-sign-in-alt mr-2"></i>
+                <span>Login</span>
+            </button>
+        </form>
+
+        <div class="mt-8 text-center">
+            <p class="text-sm text-gray-600">
+                Don't have an account? 
+                <a href="/user/register" class="text-blue-600 hover:underline font-semibold">Register here</a>
+            </p>
+            <p class="text-xs text-gray-500 mt-4">
+                <a href="/admin" class="text-gray-400 hover:text-gray-600">Admin Login</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Logging in...';
+            errorMessage.classList.add('hidden');
+            
+            try {
+                const response = await fetch('/api/user/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password})
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    localStorage.setItem('userToken', data.token);
+                    localStorage.setItem('username', username);
+                    window.location.href = '/user/dashboard';
+                } else {
+                    errorMessage.classList.remove('hidden');
+                    document.getElementById('errorText').textContent = data.error || 'Invalid credentials';
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Login';
+                }
+            } catch (error) {
+                errorMessage.classList.remove('hidden');
+                document.getElementById('errorText').textContent = 'Connection error. Please try again.';
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Login';
+            }
+        });
+    </script>
+</body>
+</html>

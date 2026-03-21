@@ -2488,70 +2488,325 @@ def get_stats():
 @app.route('/admin/sites', methods=['GET'])
 def get_sites():
     """Get all sites"""
-    return jsonify({
-        "sites": sites_data.get('sites', []),
-        "total": len(sites_data.get('sites', []))
-    })
+    try:
+        sites = sites_data.get('sites', [])
+        return jsonify({
+            "sites": sites,
+            "total": len(sites)
+        })
+    except Exception as e:
+        logger.error(f"Error getting sites: {e}")
+        return jsonify({
+            "sites": [],
+            "total": 0,
+            "error": str(e)
+        }), 500
 
 
 @app.route('/admin/sites', methods=['POST'])
 def add_site():
     """Add a new site"""
-    data = request.get_json()
-    url = data.get('url')
-    price = data.get('price', '0.00')
-    
-    if not url:
-        return jsonify({"success": False, "error": "URL is required"}), 400
-    
-    # Check if site already exists
-    if any(site['url'] == url for site in sites_data['sites']):
-        return jsonify({"success": False, "error": "Site already exists"}), 400
-    
-    # Add site
-    sites_data['sites'].append({
-        "url": url,
-        "price": price,
-        "added_by": "admin",
-        "added_by_name": "Admin User",
-        "last_response": "Not tested"
-    })
-    
-    # Save to JSON storage
-    save_json(SITES_FILE, sites_data)
-    
-    add_log("INFO", "Site added", {"url": url, "price": price})
-    
-    return jsonify({"success": True, "message": "Site added successfully"})
+    try:
+        data = request.get_json()
+        url = data.get('url')
+        price = data.get('price', '0.00')
+        
+        if not url:
+            return jsonify({"success": False, "error": "URL is required"}), 400
+        
+        # Check if site already exists
+        if any(site['url'] == url for site in sites_data['sites']):
+            return jsonify({"success": False, "error": "Site already exists"}), 400
+        
+        # Add site
+        sites_data['sites'].append({
+            "url": url,
+            "price": price,
+            "added_by": "admin",
+            "added_by_name": "Admin User",
+            "last_response": "Not tested"
+        })
+        
+        # Save to JSON storage
+        save_json(SITES_FILE, sites_data)
+        
+        add_log("INFO", "Site added", {"url": url, "price": price})
+        
+        return jsonify({"success": True, "message": "Site added successfully"})
+    except Exception as e:
+        logger.error(f"Error adding site: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route('/admin/sites', methods=['DELETE'])
 def delete_site():
     """Delete a site"""
-    data = request.get_json()
-    url = data.get('url')
-    
-    if not url:
-        return jsonify({"success": False, "error": "URL is required"}), 400
-    
-    # Remove site
-    sites_data['sites'] = [s for s in sites_data['sites'] if s['url'] != url]
-    
-    # Save to JSON storage
-    save_json(SITES_FILE, sites_data)
-    
-    add_log("INFO", "Site deleted", {"url": url})
-    
-    return jsonify({"success": True, "message": "Site deleted successfully"})
+    try:
+        data = request.get_json()
+        url = data.get('url')
+        
+        if not url:
+            return jsonify({"success": False, "error": "URL is required"}), 400
+        
+        # Remove site
+        sites_data['sites'] = [s for s in sites_data['sites'] if s['url'] != url]
+        
+        # Save to JSON storage
+        save_json(SITES_FILE, sites_data)
+        
+        add_log("INFO", "Site deleted", {"url": url})
+        
+        return jsonify({"success": True, "message": "Site deleted successfully"})
+    except Exception as e:
+        logger.error(f"Error deleting site: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route('/admin/proxies', methods=['GET'])
 def get_proxies():
     """Get all proxies"""
-    return jsonify({
-        "proxies": proxies_data.get('proxies', []),
-        "total": len(proxies_data.get('proxies', []))
-    })
+    try:
+        proxies = proxies_data.get('proxies', [])
+        return jsonify({
+            "proxies": proxies,
+            "total": len(proxies)
+        })
+    except Exception as e:
+        logger.error(f"Error getting proxies: {e}")
+        return jsonify({
+            "proxies": [],
+            "total": 0,
+            "error": str(e)
+        }), 500
+
+
+@app.route('/admin/proxies', methods=['POST'])
+def add_proxy():
+    """Add a new proxy"""
+    try:
+        data = request.get_json()
+        proxy = data.get('proxy')
+        
+        if not proxy:
+            return jsonify({"success": False, "error": "Proxy is required"}), 400
+        
+        # Check if proxy already exists
+        if proxy in proxies_data['proxies']:
+            return jsonify({"success": False, "error": "Proxy already exists"}), 400
+        
+        # Add proxy
+        proxies_data['proxies'].append(proxy)
+        
+        # Save to JSON storage
+        save_json(PROXIES_FILE, proxies_data)
+        
+        add_log("INFO", "Proxy added", {"proxy": proxy})
+        
+        return jsonify({"success": True, "message": "Proxy added successfully"})
+    except Exception as e:
+        logger.error(f"Error adding proxy: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# User storage (in-memory for now, can be saved to JSON)
+users_db = {
+    "databasemanaging": {
+        "password": "41Ars@117",
+        "role": "admin",
+        "status": "active",
+        "last_login": None
+    }
+}
+
+@app.route('/admin/proxies', methods=['DELETE'])
+def delete_proxy():
+    """Delete a proxy"""
+    try:
+        data = request.get_json()
+        proxy = data.get('proxy')
+        
+        if not proxy:
+            return jsonify({"success": False, "error": "Proxy is required"}), 400
+        
+        # Remove proxy
+        proxies_data['proxies'] = [p for p in proxies_data['proxies'] if p != proxy]
+        
+        # Save to JSON storage
+        save_json(PROXIES_FILE, proxies_data)
+        
+        add_log("INFO", "Proxy deleted", {"proxy": proxy})
+        
+        return jsonify({"success": True, "message": "Proxy deleted successfully"})
+    except Exception as e:
+        logger.error(f"Error deleting proxy: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/admin/users', methods=['GET'])
+def get_users():
+    """Get all users"""
+    try:
+        users = []
+        for username, data in users_db.items():
+            users.append({
+                "username": username,
+                "role": data.get('role', 'user'),
+                "status": data.get('status', 'active'),
+                "last_login": data.get('last_login', 'Never')
+            })
+        return jsonify({
+            "users": users,
+            "total": len(users)
+        })
+    except Exception as e:
+        logger.error(f"Error getting users: {e}")
+        return jsonify({
+            "users": [],
+            "total": 0,
+            "error": str(e)
+        }), 500
+
+
+@app.route('/admin/users', methods=['POST'])
+def add_user():
+    """Add a new user"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        role = data.get('role', 'user')
+        
+        if not username or not password:
+            return jsonify({"success": False, "error": "Username and password required"}), 400
+        
+        if username in users_db:
+            return jsonify({"success": False, "error": "User already exists"}), 400
+        
+        users_db[username] = {
+            "password": password,
+            "role": role,
+            "status": "active",
+            "last_login": None
+        }
+        
+        add_log("INFO", "User added", {"username": username, "role": role})
+        
+        return jsonify({"success": True, "message": "User added successfully"})
+    except Exception as e:
+        logger.error(f"Error adding user: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/admin/users', methods=['DELETE'])
+def delete_user():
+    """Delete a user"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        
+        if not username:
+            return jsonify({"success": False, "error": "Username required"}), 400
+        
+        if username not in users_db:
+            return jsonify({"success": False, "error": "User not found"}), 404
+        
+        del users_db[username]
+        
+        add_log("INFO", "User deleted", {"username": username})
+        
+        return jsonify({"success": True, "message": "User deleted successfully"})
+    except Exception as e:
+        logger.error(f"Error deleting user: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/user/login', methods=['GET'])
+def user_login_page():
+    """User login page"""
+    return render_template('user_login.html')
+
+
+@app.route('/user/register', methods=['GET'])
+def user_register_page():
+    """User register page"""
+    return render_template('user_register.html')
+
+
+@app.route('/user/dashboard', methods=['GET'])
+def user_dashboard():
+    """User dashboard"""
+    return render_template('user_dashboard.html')
+
+
+@app.route('/api/user/login', methods=['POST'])
+def api_user_login():
+    """User login API"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        
+        if username in users_db and users_db[username]['password'] == password:
+            users_db[username]['last_login'] = datetime.utcnow().isoformat()
+            return jsonify({
+                "success": True,
+                "message": "Login successful",
+                "username": username
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Invalid credentials"
+            }), 401
+    except Exception as e:
+        logger.error(f"User login error: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@app.route('/api/user/register', methods=['POST'])
+def api_user_register():
+    """User register API"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        email = data.get('email', '')
+        
+        if not username or not password:
+            return jsonify({
+                "success": False,
+                "error": "Username and password required"
+            }), 400
+        
+        if username in users_db:
+            return jsonify({
+                "success": False,
+                "error": "Username already exists"
+            }), 400
+        
+        users_db[username] = {
+            "password": password,
+            "email": email,
+            "role": "user",
+            "status": "active",
+            "last_login": None
+        }
+        
+        add_log("INFO", "User registered", {"username": username, "email": email})
+        
+        return jsonify({
+            "success": True,
+            "message": "Registration successful"
+        })
+    except Exception as e:
+        logger.error(f"User register error: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 
 @app.route('/', methods=['GET'])
