@@ -1707,10 +1707,7 @@ def step4_submit_completion(session, checkout_token, session_token, queue_token,
         "cartMetafields": []
     }
 
-    # Add captcha token to input data if available
-    if captcha_token:
-        print(f"  [CAPTCHA] ✅ Using captcha token in submission")
-        input_data["captchaToken"] = captcha_token
+    # Note: captchaToken is passed via session cookies, not in input object
 
     if delivery_expectation_lines:
         input_data["deliveryExpectations"] = {
