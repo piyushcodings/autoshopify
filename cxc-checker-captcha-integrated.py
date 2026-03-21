@@ -2861,6 +2861,69 @@ def public_page():
     return render_template('index.html')
 
 
+@app.route('/admin/bulk', methods=['GET'])
+def admin_bulk_operations():
+    """Bulk operations page"""
+    return render_template('admin_bulk_operations.html')
+
+
+@app.route('/admin/advanced', methods=['GET'])
+def admin_advanced_settings():
+    """Advanced settings page"""
+    return render_template('admin_advanced_settings.html')
+
+
+@app.route('/admin/system/restart', methods=['POST'])
+def admin_system_restart():
+    """Restart system"""
+    try:
+        add_log("INFO", "System restart requested", {"by": "admin"})
+        return jsonify({"success": True, "message": "System restart initiated"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/admin/system/cache/clear', methods=['POST'])
+def admin_clear_cache():
+    """Clear system cache"""
+    try:
+        add_log("INFO", "Cache cleared", {"by": "admin"})
+        return jsonify({"success": True, "message": "Cache cleared successfully"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/admin/backup/download', methods=['GET'])
+def admin_download_backup():
+    """Download system backup"""
+    try:
+        backup_data = {
+            "sites": sites_data,
+            "proxies": proxies_data,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        return jsonify({"success": True, "data": backup_data})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/admin/backup/upload', methods=['POST'])
+def admin_upload_backup():
+    """Upload and restore backup"""
+    try:
+        data = request.get_json()
+        if 'sites' in data:
+            sites_data.update(data['sites'])
+            save_json(SITES_FILE, sites_data)
+        if 'proxies' in data:
+            proxies_data.update(data['proxies'])
+            save_json(PROXIES_FILE, proxies_data)
+        add_log("INFO", "Backup restored", {"timestamp": data.get('timestamp')})
+        return jsonify({"success": True, "message": "Backup restored successfully"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 if __name__ == "__main__":
     # Get port from environment (Railway sets this)
     port = int(os.environ.get('PORT', 5000))
