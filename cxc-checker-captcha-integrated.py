@@ -2571,6 +2571,7 @@ def admin_sitechecker_test():
                 })
             else:
                 # Captcha solving failed - site is dead for our purposes
+                # DO NOT add to database
                 return jsonify({
                     "working": False,
                     "status": "dead",
