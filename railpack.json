@@ -1,11 +1,13 @@
 {
-  "packages": ["python3.11", "chromium", "chromedriver"],
-  "install": {
-    "python": {
+  "packages": {
+    "python": "3.11",
+    "chromium": "latest",
+    "chromedriver": "latest"
+  },
+  "python": {
+    "install": {
       "requirements": "requirements.txt"
     }
   },
-  "start": {
-    "cmd": "gunicorn cxc-checker-captcha-integrated:app --bind 0.0.0.0:$PORT --workers 4 --timeout 120 --access-logfile -"
-  }
+  "start": "gunicorn cxc-checker-captcha-integrated:app --bind 0.0.0.0:$PORT --workers 4 --timeout 120 --access-logfile --error-logfile -"
 }
