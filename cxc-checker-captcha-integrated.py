@@ -2482,6 +2482,65 @@ def admin_login():
         }), 401
 
 
+@app.route('/admin/sitechecker', methods=['GET'])
+def admin_sitechecker_page():
+    """Site checker page"""
+    return render_template('admin_sitechecker.html')
+
+
+@app.route('/admin/sitechecker/test', methods=['GET'])
+def admin_sitechecker_test():
+    """Test if a site works with captcha solver"""
+    try:
+        site_url = request.args.get('url', '').strip()
+        
+        if not site_url:
+            return jsonify({"working": False, "error": "No URL provided"})
+        
+        # Test the site
+        session = requests.Session()
+        session.verify = False
+        
+        # Step 1: Try to access checkout
+        checkout_url = f"{site_url}/checkout"
+        response = session.get(checkout_url, timeout=10)
+        
+        # Step 2: Check if captcha is present
+        captcha_detected = 'recaptcha' in response.text.lower() or 'hcaptcha' in response.text.lower()
+        
+        # Step 3: If captcha detected, try to solve it
+        if captcha_detected:
+            captcha_token = solve_captcha_auto(site_url, max_retries=2)
+            if captcha_token:
+                return jsonify({
+                    "working": True,
+                    "captcha_detected": True,
+                    "captcha_solved": True,
+                    "response": "Captcha solved successfully"
+                })
+            else:
+                return jsonify({
+                    "working": False,
+                    "captcha_detected": True,
+                    "captcha_solved": False,
+                    "error": "Captcha solving failed"
+                })
+        else:
+            # No captcha required
+            return jsonify({
+                "working": True,
+                "captcha_detected": False,
+                "captcha_solved": False,
+                "response": "No captcha required"
+            })
+            
+    except Exception as e:
+        return jsonify({
+            "working": False,
+            "error": str(e)
+        })
+
+
 @app.route('/admin/dashboard', methods=['GET'])
 def admin_dashboard():
     """Main admin dashboard - Full featured"""

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Checker - Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <div class="bg-white rounded-xl shadow-lg p-8">
+            <h1 class="text-3xl font-bold mb-6 flex items-center">
+                <i class="fas fa-globe text-green-600 mr-3"></i>
+                Site Checker
+            </h1>
+            
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <p class="text-sm text-blue-800">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <strong>Test sites before adding!</strong> This checker tests if a site works with our captcha solver. Only add sites that show "✅ Working".
+                </p>
+            </div>
+
+            <!-- Single Site Checker -->
+            <div class="mb-8">
+                <h4 class="font-bold mb-4 flex items-center">
+                    <i class="fas fa-search mr-2"></i>Single Site Checker
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="md:col-span-2">
+                        <input type="text" id="testSiteUrl" placeholder="https://shop-name.myshopify.com" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                    </div>
+                    <button onclick="testSingleSite()" id="testSiteBtn" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90">
+                        <i class="fas fa-play mr-2"></i>Test Site
+                    </button>
+                </div>
+                <div id="singleSiteResult" class="hidden">
+                    <div class="p-4 rounded-lg" id="singleSiteResultContent"></div>
+                    <button onclick="addTestedSite()" id="addTestedSiteBtn" class="mt-4 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 hidden">
+                        <i class="fas fa-plus mr-2"></i>Add to Sites
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mass Site Checker -->
+            <div>
+                <h4 class="font-bold mb-4 flex items-center">
+                    <i class="fas fa-layer-group mr-2"></i>Mass Site Checker
+                </h4>
+                <textarea id="massSiteUrls" rows="6" placeholder="https://shop1.myshopify.com&#10;https://shop2.myshopify.com&#10;https://shop3.myshopify.com" class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm mb-4"></textarea>
+                <div class="flex space-x-4">
+                    <button onclick="testMassSites()" id="testMassSitesBtn" class="gradient-bg text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90">
+                        <i class="fas fa-play mr-2"></i>Test All Sites
+                    </button>
+                    <button onclick="addWorkingSites()" id="addWorkingSitesBtn" class="bg-green-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700 hidden">
+                        <i class="fas fa-plus mr-2"></i>Add Working Sites
+                    </button>
+                </div>
+                <div id="massSiteProgress" class="hidden mt-4">
+                    <div class="bg-gray-200 rounded-full h-4 mb-4">
+                        <div id="massSiteProgressBar" class="gradient-bg h-4 rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <p class="text-2xl font-bold text-blue-600" id="massSiteTotal">0</p>
+                            <p class="text-sm text-gray-600">Total</p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <p class="text-2xl font-bold text-green-600" id="massSiteWorking">0</p>
+                            <p class="text-sm text-gray-600">Working</p>
+                        </div>
+                        <div class="bg-red-50 p-4 rounded-lg">
+                            <p class="text-2xl font-bold text-red-600" id="massSiteNotWorking">0</p>
+                            <p class="text-sm text-gray-600">Not Working</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="massSiteResults" class="mt-4 space-y-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testedSites = [];
+        let workingSites = [];
+
+        async function testSingleSite() {
+            const url = document.getElementById('testSiteUrl').value.trim();
+            if (!url) {
+                alert('Please enter a site URL');
+                return;
+            }
+
+            const btn = document.getElementById('testSiteBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing...';
+
+            try {
+                const response = await fetch(`/admin/sitechecker/test?url=${encodeURIComponent(url)}`);
+                const result = await response.json();
+
+                const resultDiv = document.getElementById('singleSiteResult');
+                const resultContent = document.getElementById('singleSiteResultContent');
+                const addBtn = document.getElementById('addTestedSiteBtn');
+
+                resultDiv.classList.remove('hidden');
+
+                if (result.working) {
+                    resultContent.className = 'p-4 rounded-lg bg-green-50 border border-green-200';
+                    resultContent.innerHTML = `
+                        <div class="flex items-center">
+                            <i class="fas fa-check-circle text-green-600 text-2xl mr-3"></i>
+                            <div>
+                                <p class="font-bold text-green-800">✅ Working!</p>
+                                <p class="text-sm text-green-700">Captcha: ${result.captcha_detected ? 'Detected & Solved' : 'Not Required'}</p>
+                                <p class="text-sm text-green-700">Response: ${result.response}</p>
+                            </div>
+                        </div>
+                    `;
+                    addBtn.classList.remove('hidden');
+                    testedSites = [{url, ...result}];
+                    workingSites = [{url, ...result}];
+                } else {
+                    resultContent.className = 'p-4 rounded-lg bg-red-50 border border-red-200';
+                    resultContent.innerHTML = `
+                        <div class="flex items-center">
+                            <i class="fas fa-times-circle text-red-600 text-2xl mr-3"></i>
+                            <div>
+                                <p class="font-bold text-red-800">❌ Not Working</p>
+                                <p class="text-sm text-red-700">Error: ${result.error || 'Captcha solving failed'}</p>
+                            </div>
+                        </div>
+                    `;
+                    addBtn.classList.add('hidden');
+                    testedSites = [{url, ...result}];
+                }
+            } catch (error) {
+                alert('Error testing site: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-play mr-2"></i>Test Site';
+            }
+        }
+
+        function addTestedSite() {
+            if (testedSites.length > 0 && testedSites[0].working) {
+                const site = testedSites[0];
+                fetch('/admin/sites', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url: site.url, price: '0.00'})
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Site added successfully!');
+                        document.getElementById('singleSiteResult').classList.add('hidden');
+                        document.getElementById('testSiteUrl').value = '';
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                });
+            }
+        }
+
+        async function testMassSites() {
+            const urlsText = document.getElementById('massSiteUrls').value.trim();
+            if (!urlsText) {
+                alert('Please enter site URLs');
+                return;
+            }
+
+            const urls = urlsText.split('\n').map(u => u.trim()).filter(u => u);
+            if (urls.length === 0) {
+                alert('No valid URLs found');
+                return;
+            }
+
+            const btn = document.getElementById('testMassSitesBtn');
+            const addBtn = document.getElementById('addWorkingSitesBtn');
+            const progressDiv = document.getElementById('massSiteProgress');
+            const resultsDiv = document.getElementById('massSiteResults');
+
+            btn.disabled = true;
+            addBtn.classList.add('hidden');
+            progressDiv.classList.remove('hidden');
+            resultsDiv.innerHTML = '';
+
+            testedSites = [];
+            workingSites = [];
+            let total = urls.length;
+            let working = 0;
+            let notWorking = 0;
+
+            for (let i = 0; i < urls.length; i++) {
+                const url = urls[i];
+                
+                document.getElementById('massSiteTotal').textContent = total;
+                document.getElementById('massSiteProgressBar').style.width = `${((i + 1) / total) * 100}%`;
+
+                try {
+                    const response = await fetch(`/admin/sitechecker/test?url=${encodeURIComponent(url)}`);
+                    const result = await response.json();
+
+                    testedSites.push({url, ...result});
+
+                    if (result.working) {
+                        working++;
+                        workingSites.push({url, ...result});
+                        resultsDiv.innerHTML += `
+                            <div class="p-3 rounded-lg bg-green-50 border border-green-200 flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                                    <span class="text-sm font-semibold text-green-800">${url}</span>
+                                </div>
+                                <span class="text-xs text-green-700">${result.response}</span>
+                            </div>
+                        `;
+                    } else {
+                        notWorking++;
+                        resultsDiv.innerHTML += `
+                            <div class="p-3 rounded-lg bg-red-50 border border-red-200 flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-times-circle text-red-600 mr-2"></i>
+                                    <span class="text-sm text-red-800">${url}</span>
+                                </div>
+                                <span class="text-xs text-red-700">${result.error || 'Failed'}</span>
+                            </div>
+                        `;
+                    }
+
+                    document.getElementById('massSiteWorking').textContent = working;
+                    document.getElementById('massSiteNotWorking').textContent = notWorking;
+
+                } catch (error) {
+                    notWorking++;
+                    resultsDiv.innerHTML += `
+                        <div class="p-3 rounded-lg bg-red-50 border border-red-200 flex items-center justify-between">
+                            <div class="flex items-center">
+                                <i class="fas fa-times-circle text-red-600 mr-2"></i>
+                                <span class="text-sm text-red-800">${url}</span>
+                            </div>
+                            <span class="text-xs text-red-700">Error: ${error.message}</span>
+                        </div>
+                    `;
+                    document.getElementById('massSiteNotWorking').textContent = notWorking;
+                }
+
+                // Small delay between tests
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-play mr-2"></i>Test All Sites';
+
+            if (workingSites.length > 0) {
+                addBtn.classList.remove('hidden');
+            }
+
+            alert(`Test complete!\nWorking: ${working}\nNot Working: ${notWorking}`);
+        }
+
+        function addWorkingSites() {
+            if (workingSites.length === 0) {
+                alert('No working sites to add');
+                return;
+            }
+
+            if (!confirm(`Add ${workingSites.length} working site(s) to your sites list?`)) {
+                return;
+            }
+
+            let added = 0;
+            workingSites.forEach(site => {
+                fetch('/admin/sites', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url: site.url, price: '0.00'})
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) added++;
+                    if (added === workingSites.length) {
+                        alert(`Added ${added} working site(s)!`);
+                        document.getElementById('massSiteUrls').value = '';
+                        document.getElementById('massSiteResults').innerHTML = '';
+                        document.getElementById('massSiteProgress').classList.add('hidden');
+                        document.getElementById('addWorkingSitesBtn').classList.add('hidden');
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>
