@@ -703,19 +703,15 @@
 
         // Navigation
         function showSection(section) {
-            // Hide ALL sections first
-            const allSections = document.querySelectorAll('[id$="Section"]');
-            allSections.forEach(section => section.classList.add('hidden'));
+            const sections = ['dashboard', 'checker', 'mass', 'logs', 'sites', 'proxies', 'users', 'analytics', 'performance', 'settings', 'api', 'security'];
+            sections.forEach(s => {
+                const el = document.getElementById(s + 'Section');
+                if (el) el.classList.add('hidden');
+            });
             
-            // Show selected section
             const selected = document.getElementById(section + 'Section');
-            if (selected) {
-                selected.classList.remove('hidden');
-                // Scroll to top
-                document.querySelector('.flex-1.overflow-y-auto').scrollTop = 0;
-            }
+            if (selected) selected.classList.remove('hidden');
             
-            // Update title
             const titles = {
                 dashboard: 'Dashboard',
                 checker: 'CC Checker',
@@ -732,12 +728,6 @@
             };
             document.getElementById('pageTitle').textContent = titles[section] || section;
             document.getElementById('pageDescription').textContent = 'Real-time overview';
-            
-            // Update sidebar active state
-            document.querySelectorAll('.sidebar-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            event.currentTarget.classList.add('active');
             
             // Load data for specific sections
             if (section === 'sites') loadSites();
@@ -1109,63 +1099,33 @@
 
         // Initialize charts
         function initCharts() {
-            const requestsCtx = document.getElementById('requestsChart');
-            if (requestsCtx) {
-                const ctx = requestsCtx.getContext('2d');
-                requestsChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
-                        datasets: [{
-                            label: 'Requests',
-                            data: [12, 19, 3, 5, 2, 3],
-                            borderColor: 'rgb(102, 126, 234)',
-                            tension: 0.4,
-                            fill: false
-                        }]
-                    },
-                    options: { 
-                        responsive: true, 
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-            }
+            const requestsCtx = document.getElementById('requestsChart').getContext('2d');
+            requestsChart = new Chart(requestsCtx, {
+                type: 'line',
+                data: {
+                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                    datasets: [{
+                        label: 'Requests',
+                        data: [12, 19, 3, 5, 2, 3],
+                        borderColor: 'rgb(102, 126, 234)',
+                        tension: 0.4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
 
-            const statusCtx = document.getElementById('statusChart');
-            if (statusCtx) {
-                const ctx = statusCtx.getContext('2d');
-                statusChart = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Approved', 'Declined', 'Error'],
-                        datasets: [{
-                            data: [30, 50, 20],
-                            backgroundColor: ['rgb(34, 197, 94)', 'rgb(239, 68, 68)', 'rgb(251, 191, 36)']
-                        }]
-                    },
-                    options: { 
-                        responsive: true, 
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'bottom'
-                            }
-                        }
-                    }
-                });
-            }
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            statusChart = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Approved', 'Declined', 'Error'],
+                    datasets: [{
+                        data: [30, 50, 20],
+                        backgroundColor: ['rgb(34, 197, 94)', 'rgb(239, 68, 68)', 'rgb(251, 191, 36)']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
         }
 
         function initAnalyticsCharts() {

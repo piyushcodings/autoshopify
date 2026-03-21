@@ -2811,8 +2811,8 @@ def api_user_register():
 
 @app.route('/', methods=['GET'])
 def home_page():
-    """Redirect to admin login"""
-    return redirect('/admin')
+    """Main page with login options"""
+    return render_template('index.html')
 
 
 @app.route('/public', methods=['GET'])
