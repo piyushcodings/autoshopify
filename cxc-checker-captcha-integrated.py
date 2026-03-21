@@ -709,9 +709,8 @@ def step1_add_to_cart(session, shop_url, variant_id):
             captcha_token = solve_captcha_auto(shop_url, max_retries=MAX_CAPTCHA_RETRIES)
             if captcha_token:
                 print(f"[CAPTCHA] ✅ Captcha solved successfully! Token: {captcha_token[:30]}...")
-                # Store captcha token and mark that captcha was detected
+                # Store captcha token in session for later use
                 session.cookies.set('_captcha_token', captcha_token)
-                session.cookies.set('_captcha_detected', 'true')
             else:
                 print("[CAPTCHA] ⚠️ Captcha solving failed, continuing anyway...")
 
@@ -1463,7 +1462,6 @@ def step3_proposal(session, checkout_token, session_token, card_session_id, shop
                 if captcha_token:
                     print(f"[CAPTCHA] ✅ Captcha solved! Token: {captcha_token[:30]}...")
                     session.cookies.set('_captcha_token', captcha_token)
-                    session.cookies.set('_captcha_detected', 'true')
                     # Update result with captcha status
                     result["captcha_solved"] = True
                     result["captcha_token"] = captcha_token
@@ -1710,12 +1708,9 @@ def step4_submit_completion(session, checkout_token, session_token, queue_token,
     }
 
     # Add captcha token to input data if available
-    # Only add if captcha was actually detected on this shop
-    if captcha_token and session.cookies.get('_captcha_detected'):
+    if captcha_token:
         print(f"  [CAPTCHA] ✅ Using captcha token in submission")
         input_data["captchaToken"] = captcha_token
-    elif captcha_token:
-        print(f"  [CAPTCHA] ⚠️ Captcha token available but shop may not require it")
 
     if delivery_expectation_lines:
         input_data["deliveryExpectations"] = {
@@ -1815,8 +1810,7 @@ def step4_submit_completion(session, checkout_token, session_token, queue_token,
 
                     # Add captcha token to session cookies
                     session.cookies.set('_captcha_token', captcha_token)
-                    session.cookies.set('_captcha_detected', 'true')
-
+                    
                     # Update result with captcha status
                     result["captcha_solved"] = True
                     result["captcha_token"] = captcha_token
@@ -1879,26 +1873,6 @@ def step4_submit_completion(session, checkout_token, session_token, queue_token,
                 errors = response.get('errors', [])
                 error_msgs = [e.get('message', 'Unknown') for e in errors[:3]]
                 print(f"  [ERROR] GraphQL errors: {error_msgs}")
-                
-                # Check if it's a captcha-related error
-                error_str = " | ".join(error_msgs).upper()
-                if 'CAPTCHA' in error_str:
-                    print(f"  [CAPTCHA] ⚠️ Captcha token may be invalid or expired")
-                    return None, "CAPTCHA_INVALID", "Captcha token invalid", response
-                
-                # For other GraphQL errors, try to continue anyway
-                print(f"  [WARNING] Continuing despite GraphQL errors...")
-                # Try to extract result anyway
-                result = response.get('data', {}).get('submitForCompletion', {})
-                if result:
-                    result_type = result.get('__typename', 'Unknown')
-                    if result_type in ['SubmitSuccess', 'SubmitAlreadyAccepted', 'SubmittedForCompletion']:
-                        receipt = result.get('receipt', {})
-                        receipt_id = receipt.get('id')
-                        if receipt_id:
-                            print(f"  [SUCCESS] Receipt ID despite errors: {receipt_id}")
-                            return receipt_id, "SUBMIT_SUCCESS", None, response
-                
                 return None, "GRAPHQL_ERROR", " | ".join(error_msgs), response
             
             return None, "UNEXPECTED_RESULT", f"Unexpected: {result_type}", response
