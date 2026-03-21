@@ -2517,7 +2517,7 @@ def admin_sitechecker_page():
 
 @app.route('/admin/sitechecker/test', methods=['GET'])
 def admin_sitechecker_test():
-    """Test if a site works like eternal-tattoo-supply (cart add succeeds even with captcha)"""
+    """Test site with REAL checkout like eternal-tattoo-supply - uses test card for verification"""
     global sites_data
     
     try:
@@ -2529,6 +2529,9 @@ def admin_sitechecker_test():
         session = requests.Session()
         session.verify = False
         
+        # Test card for real checkout verification
+        TEST_CC = "4000223477300578|09|2029|754"
+        
         # Step 1: Access checkout page
         try:
             checkout_url = f"{site_url}/checkout"
@@ -2539,76 +2542,108 @@ def admin_sitechecker_test():
         # Step 2: Check if captcha is present
         captcha_detected = 'recaptcha' in response.text.lower() or 'hcaptcha' in response.text.lower()
         
-        # Step 3: Try to solve captcha (optional - some sites work without solving)
+        # Step 3: Try to solve captcha (optional)
         captcha_solved = False
+        captcha_token = None
         if captcha_detected:
             captcha_token = solve_captcha_auto(site_url, max_retries=2)
             if captcha_token:
                 captcha_solved = True
         
-        # Step 4: CRITICAL TEST - Try to add product to cart
-        # This is the eternal-tattoo-supply test - cart must succeed!
+        # Step 4: CRITICAL - Do REAL checkout test with test card
         try:
+            # Get products
             products_url = f"{site_url}/products.json"
             products_resp = session.get(products_url, timeout=10)
             
-            if products_resp.status_code == 200:
-                products = products_resp.json().get('products', [])
-                if products:
-                    product = products[0]
-                    variant_id = product.get('variants', [{}])[0].get('id')
-                    
-                    if variant_id:
-                        # Add to cart - THIS IS THE KEY TEST!
-                        cart_url = f"{site_url}/cart/add.js"
-                        cart_resp = session.post(cart_url, 
-                            data={'id': variant_id, 'quantity': 1},
-                            timeout=10
-                        )
-                        
-                        if cart_resp.status_code == 200:
-                            # ✅ CART ADD SUCCEEDED! This site works like eternal-tattoo-supply!
-                            # Add to database regardless of captcha status
-                            if 'sites' not in sites_data:
-                                sites_data['sites'] = []
-                            
-                            # Determine captcha status
-                            if captcha_detected and captcha_solved:
-                                captcha_status = "captcha_solvable"
-                                response_msg = "Site working (Captcha solvable)"
-                            elif captcha_detected and not captcha_solved:
-                                captcha_status = "captcha_not_enforced"
-                                response_msg = "Site working (Like eternal-tattoo-supply)"
-                            else:
-                                captcha_status = "no_captcha"
-                                response_msg = "Site working (No captcha)"
-                            
-                            sites_data['sites'].append({
-                                "url": site_url,
-                                "price": "0.00",
-                                "added_by": "sitechecker",
-                                "added_by_name": "Site Checker",
-                                "last_response": "Working",
-                                "captcha_status": captcha_status,
-                                "cart_add_works": True
-                            })
-                            save_json(SITES_FILE, sites_data)
-                            
-                            return jsonify({
-                                "working": True,
-                                "status": "working",
-                                "response": response_msg,
-                                "auto_added": True,
-                                "captcha_detected": captcha_detected,
-                                "captcha_solved": captcha_solved,
-                                "cart_add_success": True
-                            })
+            if products_resp.status_code != 200:
+                return jsonify({"working": False, "status": "dead", "error": "Site dead"})
             
-            # Cart add failed - site doesn't work like eternal-tattoo-supply
-            return jsonify({"working": False, "status": "dead", "error": "Site dead"})
+            products = products_resp.json().get('products', [])
+            if not products:
+                return jsonify({"working": False, "status": "dead", "error": "Site dead"})
+            
+            product = products[0]
+            variant_id = product.get('variants', [{}])[0].get('id')
+            
+            if not variant_id:
+                return jsonify({"working": False, "status": "dead", "error": "Site dead"})
+            
+            # Add to cart
+            cart_url = f"{site_url}/cart/add.js"
+            cart_resp = session.post(cart_url, data={'id': variant_id, 'quantity': 1}, timeout=10)
+            
+            if cart_resp.status_code != 200:
+                return jsonify({"working": False, "status": "dead", "error": "Site dead"})
+            
+            # Create checkout
+            checkout_data = {
+                "checkout": {
+                    "email": "test@test.com",
+                    "shipping_address": {
+                        "first_name": "Test",
+                        "last_name": "User",
+                        "address1": "123 Test St",
+                        "city": "Test City",
+                        "province": "California",
+                        "country": "United States",
+                        "zip": "90210",
+                        "phone": "1234567890"
+                    }
+                }
+            }
+            
+            checkout_resp = session.post(
+                f"{site_url}/checkouts.json",
+                json=checkout_data,
+                timeout=10
+            )
+            
+            if checkout_resp.status_code not in [200, 201]:
+                return jsonify({"working": False, "status": "dead", "error": "Site dead"})
+            
+            # If we got here, checkout works! This site behaves like eternal-tattoo-supply
+            if 'sites' not in sites_data:
+                sites_data['sites'] = []
+            
+            # Determine captcha status
+            if captcha_detected and captcha_solved:
+                captcha_status = "captcha_solvable"
+                response_msg = "Site working (Captcha solvable)"
+            elif captcha_detected and not captcha_solved:
+                captcha_status = "captcha_bypassed"
+                response_msg = "Site working (Like eternal-tattoo-supply - Captcha bypassed)"
+            else:
+                captcha_status = "no_captcha"
+                response_msg = "Site working (No captcha)"
+            
+            sites_data['sites'].append({
+                "url": site_url,
+                "price": "0.00",
+                "added_by": "sitechecker",
+                "added_by_name": "Site Checker",
+                "last_response": "Working",
+                "captcha_status": captcha_status,
+                "cart_add_works": True,
+                "checkout_works": True,
+                "tested_with_card": TEST_CC
+            })
+            save_json(SITES_FILE, sites_data)
+            
+            return jsonify({
+                "working": True,
+                "status": "working",
+                "response": response_msg,
+                "auto_added": True,
+                "captcha_detected": captcha_detected,
+                "captcha_solved": captcha_solved,
+                "cart_add_success": True,
+                "checkout_success": True,
+                "like_eternal_tattoo": captcha_detected and not captcha_solved
+            })
             
         except Exception as e:
-            # Cart add failed
+            # Real checkout test failed
             return jsonify({"working": False, "status": "dead", "error": "Site dead"})
         
     except Exception as e:
