@@ -2340,6 +2340,12 @@ def health_check():
     })
 
 
+@app.route('/', methods=['GET'])
+def home_page():
+    """Beautiful home page with admin panel"""
+    return render_template('index.html')
+
+
 if __name__ == "__main__":
     # Get port from environment (Railway sets this)
     port = int(os.environ.get('PORT', 5000))

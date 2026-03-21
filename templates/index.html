@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopify Captcha Checker - Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .loader {
+            border-top-color: #667eea;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Header -->
+    <nav class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-shield-alt text-3xl"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">Shopify Captcha Checker</h1>
+                        <p class="text-sm opacity-80">Admin Panel - Powered by @DEBRAJ227</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="statusBadge" class="bg-green-500 px-3 py-1 rounded-full text-sm">
+                        <i class="fas fa-circle text-xs"></i> Online
+                    </span>
+                    <a href="https://t.me/streetfind" target="_blank" class="bg-white bg-opacity-20 px-4 py-2 rounded-lg hover:bg-opacity-30 transition">
+                        <i class="fab fa-telegram"></i> Support
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Stats Cards -->
+    <div class="container mx-auto px-4 -mt-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="bg-white rounded-xl shadow-lg p-6 card-hover transition">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">API Status</p>
+                        <p class="text-2xl font-bold text-green-600" id="apiStatus">Checking...</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <i class="fas fa-server text-green-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 card-hover transition">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">Captcha Solver</p>
+                        <p class="text-2xl font-bold text-blue-600" id="captchaStatus">Enabled</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-robot text-blue-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 card-hover transition">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">Browser Solver</p>
+                        <p class="text-2xl font-bold text-purple-600" id="browserStatus">Available</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-lg">
+                        <i class="fas fa-globe text-purple-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 card-hover transition">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">Uptime</p>
+                        <p class="text-2xl font-bold text-orange-600" id="uptime">99.9%</p>
+                    </div>
+                    <div class="bg-orange-100 p-3 rounded-lg">
+                        <i class="fas fa-clock text-orange-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Checker Form -->
+    <div class="container mx-auto px-4 mt-8">
+        <div class="bg-white rounded-xl shadow-lg p-8">
+            <h2 class="text-2xl font-bold mb-6 flex items-center">
+                <i class="fas fa-credit-card text-blue-600 mr-3"></i>
+                Check Credit Card
+            </h2>
+
+            <form id="checkerForm" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-credit-card mr-2"></i>Credit Card
+                        </label>
+                        <input type="text" id="cc" placeholder="4400662138120147|10|27|075" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-store mr-2"></i>Shop URL
+                        </label>
+                        <input type="text" id="site" placeholder="https://eternal-tattoo-supply.myshopify.com" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-user-secret mr-2"></i>Proxy (Optional)
+                    </label>
+                    <input type="text" id="proxy" placeholder="host:port:user:pass" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <button type="submit" id="submitBtn" 
+                        class="gradient-bg text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition flex items-center">
+                        <i class="fas fa-play mr-2"></i>
+                        <span>Start Check</span>
+                    </button>
+                    <button type="button" id="clearBtn" 
+                        class="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition">
+                        <i class="fas fa-trash mr-2"></i>Clear
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultSection" class="bg-white rounded-xl shadow-lg p-8 mt-8 hidden">
+            <h2 class="text-2xl font-bold mb-6 flex items-center">
+                <i class="fas fa-chart-line text-green-600 mr-3"></i>
+                Check Results
+            </h2>
+
+            <div id="loading" class="hidden text-center py-8">
+                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mx-auto mb-4"></div>
+                <p class="text-gray-600">Processing your request...</p>
+            </div>
+
+            <div id="results" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Amount</p>
+                        <p class="text-xl font-bold" id="resultAmount">-</p>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Status</p>
+                        <p class="text-xl font-bold" id="resultStatus">-</p>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Response</p>
+                        <p class="text-lg" id="resultResponse">-</p>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Site Status</p>
+                        <p class="text-xl font-bold" id="resultSite">-</p>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg md:col-span-2">
+                        <p class="text-sm text-gray-600 mb-1">Captcha Solved</p>
+                        <div class="flex items-center space-x-3">
+                            <span id="resultCaptcha" class="px-3 py-1 rounded-full text-sm font-semibold">-</span>
+                            <span id="resultProxy" class="px-3 py-1 rounded-full text-sm font-semibold">-</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg md:col-span-2">
+                        <p class="text-sm text-gray-600 mb-1">Captcha Token</p>
+                        <div class="bg-white p-3 rounded border font-mono text-sm break-all max-h-32 overflow-y-auto" id="resultToken">-</div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex space-x-4">
+                    <button onclick="copyResults()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-copy mr-2"></i>Copy Results
+                    </button>
+                    <button onclick="clearResults()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition">
+                        <i class="fas fa-times mr-2"></i>Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Documentation -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mt-8">
+            <h2 class="text-2xl font-bold mb-6 flex items-center">
+                <i class="fas fa-book text-purple-600 mr-3"></i>
+                API Documentation
+            </h2>
+
+            <div class="bg-gray-900 text-green-400 p-6 rounded-lg font-mono text-sm overflow-x-auto">
+                <p class="text-gray-400 mb-2"># Health Check</p>
+                <p class="mb-4">curl https://databasemanaging.com/health</p>
+
+                <p class="text-gray-400 mb-2"># Check Credit Card</p>
+                <p class="break-all">curl "https://databasemanaging.com/process?key=md-tech&cc=4400662138120147|10|27|075&site=https://shop-name.myshopify.com&proxy=host:port:user:pass"</p>
+            </div>
+
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="border-l-4 border-green-500 pl-4">
+                    <h3 class="font-bold text-green-600">✅ Success</h3>
+                    <p class="text-sm text-gray-600">captcha_solved: true + Approved</p>
+                </div>
+                <div class="border-l-4 border-yellow-500 pl-4">
+                    <h3 class="font-bold text-yellow-600">⚠️ Declined</h3>
+                    <p class="text-sm text-gray-600">CARD_DECLINED or GENERIC_ERROR</p>
+                </div>
+                <div class="border-l-4 border-red-500 pl-4">
+                    <h3 class="font-bold text-red-600">❌ Error</h3>
+                    <p class="text-sm text-gray-600">Site dead or invalid response</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center py-8 text-gray-600">
+            <p class="mb-2">
+                <i class="fas fa-code mr-2"></i>
+                Developed by <a href="https://t.me/DEBRAJ227" target="_blank" class="text-blue-600 hover:underline">@DEBRAJ227</a>
+            </p>
+            <p class="text-sm">
+                <i class="fas fa-headset mr-2"></i>
+                Support: <a href="https://t.me/streetfind" target="_blank" class="text-blue-600 hover:underline">https://t.me/streetfind</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Check API health on load
+        async function checkHealth() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                
+                document.getElementById('apiStatus').textContent = 'Online';
+                document.getElementById('apiStatus').className = 'text-2xl font-bold text-green-600';
+                document.getElementById('captchaStatus').textContent = data.captcha_solver === 'enabled' ? 'Enabled' : 'Disabled';
+                document.getElementById('browserStatus').textContent = data.browser_solver ? 'Available' : 'Not Available';
+            } catch (error) {
+                document.getElementById('apiStatus').textContent = 'Offline';
+                document.getElementById('apiStatus').className = 'text-2xl font-bold text-red-600';
+                document.getElementById('statusBadge').className = 'bg-red-500 px-3 py-1 rounded-full text-sm';
+                document.getElementById('statusBadge').innerHTML = '<i class="fas fa-circle text-xs"></i> Offline';
+            }
+        }
+
+        // Form submission
+        document.getElementById('checkerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const cc = document.getElementById('cc').value;
+            const site = document.getElementById('site').value;
+            const proxy = document.getElementById('proxy').value;
+            
+            // Show loading
+            document.getElementById('resultSection').classList.remove('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            
+            // Build URL
+            let url = `/process?key=md-tech&cc=${encodeURIComponent(cc)}&site=${encodeURIComponent(site)}`;
+            if (proxy) {
+                url += `&proxy=${encodeURIComponent(proxy)}`;
+            }
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                // Display results
+                document.getElementById('resultAmount').textContent = data.amount || '-';
+                document.getElementById('resultStatus').textContent = data.status || '-';
+                document.getElementById('resultResponse').textContent = data.response || '-';
+                document.getElementById('resultSite').textContent = data.site || '-';
+                
+                // Captcha status
+                const captchaEl = document.getElementById('resultCaptcha');
+                captchaEl.textContent = data.captcha_solved ? '✅ Yes' : '❌ No';
+                captchaEl.className = data.captcha_solved ? 'px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800' : 'px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800';
+                
+                // Proxy status
+                const proxyEl = document.getElementById('resultProxy');
+                proxyEl.textContent = data.proxy === 'Working' ? '🔆 Shining' : '🚫 Dead';
+                proxyEl.className = data.proxy === 'Working' ? 'px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800' : 'px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800';
+                
+                // Token
+                document.getElementById('resultToken').textContent = data.captcha_token || 'No token';
+                
+                // Show results
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('results').classList.remove('hidden');
+                
+            } catch (error) {
+                alert('Error: ' + error.message);
+                document.getElementById('loading').classList.add('hidden');
+            }
+        });
+
+        // Clear form
+        document.getElementById('clearBtn').addEventListener('click', function() {
+            document.getElementById('checkerForm').reset();
+            clearResults();
+        });
+
+        // Clear results
+        function clearResults() {
+            document.getElementById('resultSection').classList.add('hidden');
+        }
+
+        // Copy results
+        function copyResults() {
+            const results = {
+                amount: document.getElementById('resultAmount').textContent,
+                status: document.getElementById('resultStatus').textContent,
+                response: document.getElementById('resultResponse').textContent,
+                site: document.getElementById('resultSite').textContent,
+                captcha: document.getElementById('resultCaptcha').textContent,
+                proxy: document.getElementById('resultProxy').textContent
+            };
+            
+            navigator.clipboard.writeText(JSON.stringify(results, null, 2));
+            alert('Results copied to clipboard!');
+        }
+
+        // Initialize
+        checkHealth();
+        setInterval(checkHealth, 30000); // Check every 30 seconds
+    </script>
+</body>
+</html>
