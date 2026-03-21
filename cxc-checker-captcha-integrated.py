@@ -2386,6 +2386,19 @@ def process_api():
             "captcha_solved": result.get('captcha_solved'),
             "response": result.get('response')
         })
+        
+        # Save to user history if logged in
+        if 'username' in request.args:
+            username = request.args.get('username')
+            if username not in user_history:
+                user_history[username] = []
+            user_history[username].append({
+                "time": datetime.utcnow().isoformat(),
+                "card": cc,
+                "site": site,
+                "status": result.get('status'),
+                "response": result.get('response')
+            })
 
         return jsonify(result)
 
@@ -2618,6 +2631,9 @@ users_db = {
     }
 }
 
+# User check history storage
+user_history = {}
+
 @app.route('/admin/proxies', methods=['DELETE'])
 def delete_proxy():
     """Delete a proxy"""
@@ -2803,6 +2819,30 @@ def api_user_register():
         })
     except Exception as e:
         logger.error(f"User register error: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@app.route('/api/user/history', methods=['GET'])
+def api_user_history():
+    """Get user check history"""
+    try:
+        username = request.args.get('username')
+        
+        if not username:
+            return jsonify({"success": False, "error": "Username required"}), 400
+        
+        history = user_history.get(username, [])
+        
+        return jsonify({
+            "success": True,
+            "history": history,
+            "total": len(history)
+        })
+    except Exception as e:
+        logger.error(f"User history error: {e}")
         return jsonify({
             "success": False,
             "error": str(e)
