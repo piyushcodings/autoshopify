@@ -1109,6 +1109,14 @@
 
         // Initialize charts
         function initCharts() {
+            // Destroy existing charts if they exist
+            if (requestsChart) {
+                requestsChart.destroy();
+            }
+            if (statusChart) {
+                statusChart.destroy();
+            }
+            
             const requestsCtx = document.getElementById('requestsChart');
             if (requestsCtx) {
                 const ctx = requestsCtx.getContext('2d');
@@ -1126,7 +1134,8 @@
                     },
                     options: { 
                         responsive: true, 
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        aspectRatio: 2,
                         plugins: {
                             legend: {
                                 display: true,
@@ -1156,7 +1165,8 @@
                     },
                     options: { 
                         responsive: true, 
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        aspectRatio: 2,
                         plugins: {
                             legend: {
                                 display: true,
@@ -1169,32 +1179,52 @@
         }
 
         function initAnalyticsCharts() {
-            const ctx1 = document.getElementById('analyticsChart1').getContext('2d');
-            analyticsChart1 = new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                    datasets: [{
-                        label: 'Requests',
-                        data: [65, 59, 80, 81, 56, 55, 40],
-                        backgroundColor: 'rgb(102, 126, 234)'
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
+            // Destroy existing charts if they exist
+            if (analyticsChart1) {
+                analyticsChart1.destroy();
+            }
+            if (analyticsChart2) {
+                analyticsChart2.destroy();
+            }
+            
+            const ctx1 = document.getElementById('analyticsChart1');
+            if (ctx1) {
+                analyticsChart1 = new Chart(ctx1.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{
+                            label: 'Requests',
+                            data: [65, 59, 80, 81, 56, 55, 40],
+                            backgroundColor: 'rgb(102, 126, 234)'
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: true,
+                        aspectRatio: 2
+                    }
+                });
+            }
 
-            const ctx2 = document.getElementById('analyticsChart2').getContext('2d');
-            analyticsChart2 = new Chart(ctx2, {
-                type: 'pie',
-                data: {
-                    labels: ['Success', 'Declined', 'Error'],
-                    datasets: [{
-                        data: [300, 50, 100],
-                        backgroundColor: ['rgb(34, 197, 94)', 'rgb(239, 68, 68)', 'rgb(251, 191, 36)']
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
+            const ctx2 = document.getElementById('analyticsChart2');
+            if (ctx2) {
+                analyticsChart2 = new Chart(ctx2.getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: ['Success', 'Declined', 'Error'],
+                        datasets: [{
+                            data: [300, 50, 100],
+                            backgroundColor: ['rgb(34, 197, 94)', 'rgb(239, 68, 68)', 'rgb(251, 191, 36)']
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: true,
+                        aspectRatio: 2
+                    }
+                });
+            }
         }
 
         // Initialize
