@@ -224,10 +224,29 @@ def solve_recaptcha_v2(site_key, page_url="https://example.com", invisible=True,
             session.verify = False
 
             response = session.get(anchor_url)
-            token = str(response.text).partition(str('id="recaptcha-token" value="'))[-1].partition(str('">'))[0]
+            
+            # Try multiple extraction methods
+            token = None
+            
+            # Method 1: Original partition method
+            if not token:
+                token = str(response.text).partition(str('id="recaptcha-token" value="'))[-1].partition(str('">'))[0]
+            
+            # Method 2: Regex fallback
+            if not token or len(token) < 10:
+                token_match = re.search(r'id="recaptcha-token"\s+value="([^"]+)"', response.text)
+                if token_match:
+                    token = token_match.group(1)
+            
+            # Method 3: Alternative format
+            if not token or len(token) < 10:
+                token_match = re.search(r'recaptcha-token.*?value="([^"]+)"', response.text)
+                if token_match:
+                    token = token_match.group(1)
 
             if not token or len(token) < 10:
                 logger.warning(f"⚠️ Failed to extract token from anchor page")
+                logger.debug(f"Response length: {len(response.text)}")
                 if attempt < max_retries - 1:
                     time.sleep(2)
                 continue
