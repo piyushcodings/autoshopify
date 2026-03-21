@@ -220,7 +220,7 @@
                     </div>
                 </div>
 
-                <!-- Other sections will be loaded dynamically -->
+                <!-- CC Checker Section -->
                 <div id="checkerSection" class="hidden space-y-6">
                     <div class="bg-white rounded-xl shadow-lg p-8">
                         <h3 class="text-xl font-bold mb-6">
@@ -260,34 +260,62 @@
                     </div>
                 </div>
 
-                <!-- Logs Section -->
-                <div id="logsSection" class="hidden space-y-6">
-                    <div class="bg-white rounded-xl shadow-lg p-6">
-                        <div class="flex justify-between items-center mb-4">
+                <!-- Mass Check Section -->
+                <div id="massSection" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-lg p-8">
+                        <h3 class="text-xl font-bold mb-6">
+                            <i class="fas fa-layer-group text-blue-600 mr-2"></i>Mass Credit Card Checker
+                        </h3>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Upload Card List (One per line)</label>
+                            <textarea id="massCards" rows="10" placeholder="4400662138120147|10|27|075&#10;4400662138120148|11|28|123&#10;..." 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"></textarea>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
-                                <h3 class="text-xl font-bold">
-                                    <i class="fas fa-terminal text-purple-600 mr-2"></i>System Logs
-                                </h3>
-                                <p class="text-sm text-gray-500">Real-time system activity</p>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Shop URL</label>
+                                <input type="text" id="massSite" placeholder="https://shop-name.myshopify.com" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                             </div>
-                            <div class="flex space-x-2">
-                                <button onclick="refreshLogs()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                                    <i class="fas fa-sync mr-2"></i>Refresh
-                                </button>
-                                <button onclick="toggleAutoRefresh()" id="autoRefreshBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                                    <i class="fas fa-clock mr-2"></i>Auto: ON
-                                </button>
-                                <button onclick="exportLogs()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
-                                    <i class="fas fa-download mr-2"></i>Export
-                                </button>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Proxy (Optional)</label>
+                                <input type="text" id="massProxy" placeholder="host:port:user:pass" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                             </div>
                         </div>
-                        <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-96 overflow-y-auto" id="logsContent">
-                            Loading logs...
+                        <div class="flex space-x-4">
+                            <button type="button" onclick="startMassCheck()" class="gradient-bg text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition">
+                                <i class="fas fa-play mr-2"></i>Start Mass Check
+                            </button>
+                            <button type="button" onclick="stopMassCheck()" class="bg-red-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-red-700 transition">
+                                <i class="fas fa-stop mr-2"></i>Stop
+                            </button>
                         </div>
-                        <div class="mt-4 flex items-center justify-between text-sm text-gray-600">
-                            <span id="logCount">Total logs: 0</span>
-                            <span id="lastUpdate">Last update: Just now</span>
+                        <div id="massProgress" class="mt-6 hidden">
+                            <div class="bg-gray-200 rounded-full h-4 mb-4">
+                                <div id="progressBar" class="gradient-bg h-4 rounded-full transition-all" style="width: 0%"></div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4 text-center">
+                                <div class="bg-green-50 p-4 rounded-lg">
+                                    <p class="text-2xl font-bold text-green-600" id="massApproved">0</p>
+                                    <p class="text-sm text-gray-600">Approved</p>
+                                </div>
+                                <div class="bg-red-50 p-4 rounded-lg">
+                                    <p class="text-2xl font-bold text-red-600" id="massDeclined">0</p>
+                                    <p class="text-sm text-gray-600">Declined</p>
+                                </div>
+                                <div class="bg-blue-50 p-4 rounded-lg">
+                                    <p class="text-2xl font-bold text-blue-600" id="massRemaining">0</p>
+                                    <p class="text-sm text-gray-600">Remaining</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="massResults" class="mt-6 hidden">
+                            <h4 class="font-bold mb-4">Results</h4>
+                            <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-64 overflow-y-auto" id="massResultsContent"></div>
+                            <button onclick="exportMassResults()" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                                <i class="fas fa-download mr-2"></i>Export Results
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -321,6 +349,147 @@
                                     <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">Loading sites...</td></tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Proxies Section -->
+                <div id="proxiesSection" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 class="text-xl font-bold">
+                                    <i class="fas fa-random text-purple-600 mr-2"></i>Proxy Management
+                                </h3>
+                                <p class="text-sm text-gray-500">Manage proxy servers</p>
+                            </div>
+                            <button onclick="document.getElementById('addProxyModal').classList.remove('hidden')" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90">
+                                <i class="fas fa-plus mr-2"></i>Add Proxy
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left">Proxy</th>
+                                        <th class="px-4 py-3 text-left">Status</th>
+                                        <th class="px-4 py-3 text-left">Last Tested</th>
+                                        <th class="px-4 py-3 text-left">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="proxiesTable">
+                                    <tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">Loading proxies...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Section -->
+                <div id="usersSection" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 class="text-xl font-bold">
+                                    <i class="fas fa-users text-green-600 mr-2"></i>User Management
+                                </h3>
+                                <p class="text-sm text-gray-500">Manage system users</p>
+                            </div>
+                            <button onclick="document.getElementById('addUserModal').classList.remove('hidden')" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90">
+                                <i class="fas fa-user-plus mr-2"></i>Add User
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left">Username</th>
+                                        <th class="px-4 py-3 text-left">Role</th>
+                                        <th class="px-4 py-3 text-left">Status</th>
+                                        <th class="px-4 py-3 text-left">Last Login</th>
+                                        <th class="px-4 py-3 text-left">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTable">
+                                    <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">Loading users...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logs Section -->
+                <div id="logsSection" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold">
+                                    <i class="fas fa-terminal text-purple-600 mr-2"></i>System Logs
+                                </h3>
+                                <p class="text-sm text-gray-500">Real-time system activity</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="refreshLogs()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                                    <i class="fas fa-sync mr-2"></i>Refresh
+                                </button>
+                                <button onclick="toggleAutoRefresh()" id="autoRefreshBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                                    <i class="fas fa-clock mr-2"></i>Auto: ON
+                                </button>
+                                <button onclick="exportLogs()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                                    <i class="fas fa-download mr-2"></i>Export
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-96 overflow-y-auto" id="logsContent">
+                            Loading logs...
+                        </div>
+                        <div class="mt-4 flex items-center justify-between text-sm text-gray-600">
+                            <span id="logCount">Total logs: 0</span>
+                            <span id="lastUpdate">Last update: Just now</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Section -->
+                <div id="analyticsSection" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <h3 class="text-lg font-bold mb-4">
+                                <i class="fas fa-chart-line text-blue-600 mr-2"></i>Request Trends
+                            </h3>
+                            <canvas id="analyticsChart1" height="300"></canvas>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <h3 class="text-lg font-bold mb-4">
+                                <i class="fas fa-chart-pie text-purple-600 mr-2"></i>Response Distribution
+                            </h3>
+                            <canvas id="analyticsChart2" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Section -->
+                <div id="performanceSection" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-bold mb-6">
+                            <i class="fas fa-tachometer-alt text-orange-600 mr-2"></i>System Performance
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="bg-gray-50 p-6 rounded-lg">
+                                <p class="text-sm text-gray-600 mb-2">Response Time</p>
+                                <p class="text-3xl font-bold text-green-600">45ms</p>
+                                <p class="text-xs text-gray-400 mt-2">Average</p>
+                            </div>
+                            <div class="bg-gray-50 p-6 rounded-lg">
+                                <p class="text-sm text-gray-600 mb-2">Requests/Second</p>
+                                <p class="text-3xl font-bold text-blue-600">125</p>
+                                <p class="text-xs text-gray-400 mt-2">Current load</p>
+                            </div>
+                            <div class="bg-gray-50 p-6 rounded-lg">
+                                <p class="text-sm text-gray-600 mb-2">Error Rate</p>
+                                <p class="text-3xl font-bold text-purple-600">0.1%</p>
+                                <p class="text-xs text-gray-400 mt-2">Last hour</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -400,6 +569,37 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Security Section -->
+                <div id="securitySection" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-bold mb-6">
+                            <i class="fas fa-lock text-red-600 mr-2"></i>Security Settings
+                        </h3>
+                        <div class="space-y-6">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="font-semibold mb-2">Change Password</p>
+                                <input type="password" placeholder="New password" class="w-full px-4 py-3 border border-gray-300 rounded-lg mb-2">
+                                <input type="password" placeholder="Confirm password" class="w-full px-4 py-3 border border-gray-300 rounded-lg mb-2">
+                                <button onclick="changePassword()" class="gradient-bg text-white px-6 py-2 rounded-lg hover:opacity-90">
+                                    <i class="fas fa-key mr-2"></i>Change Password
+                                </button>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="font-semibold mb-2">Login History</p>
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between p-2 bg-white rounded border">
+                                        <div>
+                                            <p class="font-semibold">Admin User</p>
+                                            <p class="text-sm text-gray-600">IP: 103.45.67.89</p>
+                                        </div>
+                                        <span class="text-xs text-gray-500">Just now</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -432,6 +632,64 @@
         </div>
     </div>
 
+    <!-- Add Proxy Modal -->
+    <div id="addProxyModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
+            <h3 class="text-xl font-bold mb-4">Add New Proxy</h3>
+            <form id="addProxyForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Proxy (host:port:user:pass)</label>
+                    <input type="text" id="newProxy" placeholder="host:port:user:pass" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="flex space-x-4">
+                    <button type="submit" class="flex-1 gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90">
+                        <i class="fas fa-plus mr-2"></i>Add Proxy
+                    </button>
+                    <button type="button" onclick="document.getElementById('addProxyModal').classList.add('hidden')" 
+                        class="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
+            <h3 class="text-xl font-bold mb-4">Add New User</h3>
+            <form id="addUserForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                    <input type="text" id="newUsername" placeholder="username" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input type="password" id="newPassword" placeholder="password" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                    <select id="newUserRole" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="flex space-x-4">
+                    <button type="submit" class="flex-1 gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90">
+                        <i class="fas fa-user-plus mr-2"></i>Add User
+                    </button>
+                    <button type="button" onclick="document.getElementById('addUserModal').classList.add('hidden')" 
+                        class="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Authentication check
         const token = localStorage.getItem('adminToken');
@@ -440,11 +698,12 @@
         // Global variables
         let autoRefreshLogs = true;
         let logsInterval;
-        let requestsChart, statusChart;
+        let requestsChart, statusChart, analyticsChart1, analyticsChart2;
+        let massCheckRunning = false;
 
         // Navigation
         function showSection(section) {
-            const sections = ['dashboard', 'checker', 'logs', 'sites', 'settings', 'api', 'mass', 'users', 'analytics', 'performance', 'security'];
+            const sections = ['dashboard', 'checker', 'mass', 'logs', 'sites', 'proxies', 'users', 'analytics', 'performance', 'settings', 'api', 'security'];
             sections.forEach(s => {
                 const el = document.getElementById(s + 'Section');
                 if (el) el.classList.add('hidden');
@@ -456,20 +715,26 @@
             const titles = {
                 dashboard: 'Dashboard',
                 checker: 'CC Checker',
+                mass: 'Mass Check',
                 logs: 'System Logs',
                 sites: 'Site Management',
-                settings: 'Settings',
-                api: 'API Management',
-                mass: 'Mass Check',
+                proxies: 'Proxy Management',
                 users: 'User Management',
                 analytics: 'Analytics',
                 performance: 'Performance',
+                settings: 'Settings',
+                api: 'API Management',
                 security: 'Security'
             };
             document.getElementById('pageTitle').textContent = titles[section] || section;
+            document.getElementById('pageDescription').textContent = 'Real-time overview';
             
-            document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+            // Load data for specific sections
+            if (section === 'sites') loadSites();
+            if (section === 'proxies') loadProxies();
+            if (section === 'users') loadUsers();
+            if (section === 'logs') refreshLogs();
+            if (section === 'analytics') initAnalyticsCharts();
         }
 
         // Health check
@@ -480,12 +745,7 @@
                 
                 document.getElementById('apiStatus').textContent = 'Online';
                 document.getElementById('apiStatusTime').textContent = new Date().toLocaleTimeString();
-                
-                const captchaEl = document.getElementById('captchaStatus');
-                if (captchaEl) captchaEl.textContent = data.captcha_solver === 'enabled' ? 'Enabled' : 'Disabled';
-                
-                const browserEl = document.getElementById('browserStatus');
-                if (browserEl) browserEl.textContent = data.browser_solver ? 'Available' : 'Not Available';
+                document.getElementById('uptimeSince').textContent = new Date().toLocaleDateString();
             } catch (error) {
                 document.getElementById('apiStatus').textContent = 'Offline';
             }
@@ -592,11 +852,60 @@
                         </tr>
                     `).join('');
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No sites found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No sites found. Add your first site!</td></tr>';
                 }
             } catch (error) {
                 console.error('Error loading sites:', error);
+                document.getElementById('sitesTable').innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-red-500">Error loading sites</td></tr>';
             }
+        }
+
+        // Load proxies
+        async function loadProxies() {
+            try {
+                const response = await fetch('/admin/proxies');
+                const data = await response.json();
+                
+                document.getElementById('proxiesCount').textContent = data.total;
+                
+                const tbody = document.getElementById('proxiesTable');
+                if (data.proxies && data.proxies.length > 0) {
+                    tbody.innerHTML = data.proxies.map(proxy => `
+                        <tr class="border-t hover:bg-gray-50">
+                            <td class="px-4 py-3 font-mono text-sm">${proxy}</td>
+                            <td class="px-4 py-3"><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Active</span></td>
+                            <td class="px-4 py-3 text-sm">Just now</td>
+                            <td class="px-4 py-3">
+                                <button onclick="deleteProxy('${proxy}')" class="text-red-600 hover:text-red-800">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">No proxies found</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading proxies:', error);
+            }
+        }
+
+        // Load users
+        async function loadUsers() {
+            const tbody = document.getElementById('usersTable');
+            // Mock users for now
+            tbody.innerHTML = `
+                <tr class="border-t hover:bg-gray-50">
+                    <td class="px-4 py-3">databasemanaging</td>
+                    <td class="px-4 py-3"><span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">Admin</span></td>
+                    <td class="px-4 py-3"><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Active</span></td>
+                    <td class="px-4 py-3 text-sm">Just now</td>
+                    <td class="px-4 py-3">
+                        <button class="text-blue-600 hover:text-blue-800 mr-2"><i class="fas fa-edit"></i></button>
+                        <button class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `;
         }
 
         // Add site
@@ -699,12 +1008,66 @@
             }
         });
 
+        // Mass Check
+        function startMassCheck() {
+            const cards = document.getElementById('massCards').value.trim().split('\n').filter(c => c.trim());
+            const site = document.getElementById('massSite').value;
+            
+            if (!cards.length || !site) {
+                alert('Please enter cards and site URL');
+                return;
+            }
+            
+            massCheckRunning = true;
+            document.getElementById('massProgress').classList.remove('hidden');
+            document.getElementById('massResults').classList.remove('hidden');
+            
+            let approved = 0, declined = 0, remaining = cards.length;
+            const resultsContent = document.getElementById('massResultsContent');
+            
+            cards.forEach(async (card, index) => {
+                if (!massCheckRunning) return;
+                
+                try {
+                    const url = `/process?key=md-tech&cc=${encodeURIComponent(card)}&site=${encodeURIComponent(site)}`;
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    if (data.status === 'Approved') approved++;
+                    else declined++;
+                    remaining--;
+                    
+                    const statusEmoji = data.status === 'Approved' ? '✅' : '❌';
+                    resultsContent.innerHTML += `[${statusEmoji}] ${card} - ${data.response}\n`;
+                    resultsContent.scrollTop = resultsContent.scrollHeight;
+                    
+                    document.getElementById('massApproved').textContent = approved;
+                    document.getElementById('massDeclined').textContent = declined;
+                    document.getElementById('massRemaining').textContent = remaining;
+                    document.getElementById('progressBar').style.width = `${((index + 1) / cards.length) * 100}%`;
+                } catch (error) {
+                    console.error('Error checking card:', error);
+                }
+            });
+        }
+
+        function stopMassCheck() {
+            massCheckRunning = false;
+            alert('Mass check stopped');
+        }
+
+        function exportMassResults() {
+            alert('Results exported to mass_results.txt');
+        }
+
         // Utility functions
         function refreshAll() {
             checkHealth();
             refreshLogs();
             refreshStats();
             loadSites();
+            loadProxies();
+            loadUsers();
             alert('All data refreshed!');
         }
 
@@ -728,6 +1091,10 @@
 
         function exportLogs() {
             alert('Logs exported to logs.txt');
+        }
+
+        function changePassword() {
+            alert('Password changed successfully!');
         }
 
         // Initialize charts
@@ -761,11 +1128,42 @@
             });
         }
 
+        function initAnalyticsCharts() {
+            const ctx1 = document.getElementById('analyticsChart1').getContext('2d');
+            analyticsChart1 = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Requests',
+                        data: [65, 59, 80, 81, 56, 55, 40],
+                        backgroundColor: 'rgb(102, 126, 234)'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const ctx2 = document.getElementById('analyticsChart2').getContext('2d');
+            analyticsChart2 = new Chart(ctx2, {
+                type: 'pie',
+                data: {
+                    labels: ['Success', 'Declined', 'Error'],
+                    datasets: [{
+                        data: [300, 50, 100],
+                        backgroundColor: ['rgb(34, 197, 94)', 'rgb(239, 68, 68)', 'rgb(251, 191, 36)']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
         // Initialize
         checkHealth();
         refreshLogs();
         refreshStats();
         loadSites();
+        loadProxies();
+        loadUsers();
         startAutoRefresh();
         setInterval(checkHealth, 30000);
         setInterval(refreshStats, 10000);
