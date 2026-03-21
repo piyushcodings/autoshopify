@@ -50,7 +50,7 @@
             <!-- Dashboard Section -->
             <div id="dashboardSection">
                 <!-- Stats Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
                     <div class="bg-white rounded-xl shadow-lg p-6">
                         <div class="flex items-center justify-between">
                             <div>
@@ -67,12 +67,38 @@
                     <div class="bg-white rounded-xl shadow-lg p-6">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-gray-500 text-sm">Approved</p>
-                                <p class="text-3xl font-bold text-green-600" id="approvedCount">0</p>
-                                <p class="text-xs text-green-600 mt-1"><span id="approvedRate">0</span>% success rate</p>
+                                <p class="text-gray-500 text-sm">Charged</p>
+                                <p class="text-3xl font-bold text-green-600" id="chargedCount">0</p>
+                                <p class="text-xs text-green-600 mt-1">Successfully charged</p>
                             </div>
                             <div class="bg-green-100 p-4 rounded-lg">
-                                <i class="fas fa-check-circle text-green-600 text-2xl"></i>
+                                <i class="fas fa-dollar-sign text-green-600 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Approved</p>
+                                <p class="text-3xl font-bold text-blue-600" id="approvedCount">0</p>
+                                <p class="text-xs text-blue-600 mt-1">Valid cards</p>
+                            </div>
+                            <div class="bg-blue-100 p-4 rounded-lg">
+                                <i class="fas fa-check-circle text-blue-600 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm">Low Funds</p>
+                                <p class="text-3xl font-bold text-yellow-600" id="lowFundsCount">0</p>
+                                <p class="text-xs text-yellow-600 mt-1">Insufficient funds</p>
+                            </div>
+                            <div class="bg-yellow-100 p-4 rounded-lg">
+                                <i class="fas fa-coins text-yellow-600 text-2xl"></i>
                             </div>
                         </div>
                     </div>
@@ -86,19 +112,6 @@
                             </div>
                             <div class="bg-red-100 p-4 rounded-lg">
                                 <i class="fas fa-times-circle text-red-600 text-2xl"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-xl shadow-lg p-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-500 text-sm">Captcha Solved</p>
-                                <p class="text-3xl font-bold text-purple-600" id="captchaSolved">0</p>
-                                <p class="text-xs text-purple-600 mt-1"><span id="captchaRate">0</span>% auto-solve</p>
-                            </div>
-                            <div class="bg-purple-100 p-4 rounded-lg">
-                                <i class="fas fa-robot text-purple-600 text-2xl"></i>
                             </div>
                         </div>
                     </div>
@@ -353,7 +366,7 @@
         let checkRunning = false;
         let checkController = null;
         let history = JSON.parse(localStorage.getItem('userCheckHistory') || '[]');
-        let stats = { total: 0, approved: 0, declined: 0, captcha: 0 };
+        let stats = { total: 0, charged: 0, approved: 0, lowFunds: 0, declined: 0, captcha: 0 };
         let activityChart, statusChart;
 
         // Navigation
@@ -397,19 +410,20 @@
         // Update stats
         function updateStats() {
             stats.total = history.length;
-            stats.approved = history.filter(h => h.status === 'Approved').length;
-            stats.declined = history.filter(h => h.status === 'Declined').length;
+            stats.charged = history.filter(h => h.status === 'Approved' && (h.response.includes('CHARGED') || h.response.includes('ORDER CONFIRM') || h.response.includes('THANK YOU'))).length;
+            stats.approved = history.filter(h => h.status === 'Approved' && !h.response.includes('CHARGED')).length;
+            stats.lowFunds = history.filter(h => h.response.includes('INSUFFICIENT') || h.response.includes('LOW FUNDS')).length;
+            stats.declined = history.filter(h => h.status === 'Declined' && !h.response.includes('INSUFFICIENT')).length;
             stats.captcha = history.filter(h => h.captcha_solved).length;
             
             document.getElementById('totalChecks').textContent = stats.total;
+            document.getElementById('chargedCount').textContent = stats.charged;
             document.getElementById('approvedCount').textContent = stats.approved;
+            document.getElementById('lowFundsCount').textContent = stats.lowFunds;
             document.getElementById('declinedCount').textContent = stats.declined;
-            document.getElementById('captchaSolved').textContent = stats.captcha;
             
             document.getElementById('todayChecks').textContent = history.filter(h => new Date(h.time).toDateString() === new Date().toDateString()).length;
-            document.getElementById('approvedRate').textContent = stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0;
             document.getElementById('declinedRate').textContent = stats.total > 0 ? Math.round((stats.declined / stats.total) * 100) : 0;
-            document.getElementById('captchaRate').textContent = stats.total > 0 ? Math.round((stats.captcha / stats.total) * 100) : 0;
             
             initCharts();
         }
@@ -439,10 +453,10 @@
             statusChart = new Chart(statusCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Approved', 'Declined'],
+                    labels: ['Charged', 'Approved', 'Low Funds', 'Declined'],
                     datasets: [{
-                        data: [stats.approved, stats.declined],
-                        backgroundColor: ['rgb(34, 197, 94)', 'rgb(239, 68, 68)']
+                        data: [stats.charged, stats.approved, stats.lowFunds, stats.declined],
+                        backgroundColor: ['rgb(34, 197, 94)', 'rgb(59, 130, 246)', 'rgb(251, 191, 36)', 'rgb(239, 68, 68)']
                     }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
@@ -606,6 +620,23 @@
             a.download = 'check_history_' + new Date().toISOString().split('T')[0] + '.json';
             a.click();
             URL.revokeObjectURL(url);
+        }
+
+        function deleteHistoryItem(index) {
+            if (confirm('Delete this item?')) {
+                history.splice(index, 1);
+                localStorage.setItem('userCheckHistory', JSON.stringify(history));
+                loadHistory();
+            }
+        }
+
+        function retryCheck(index) {
+            const item = history[index];
+            if (item) {
+                document.getElementById('cc').value = item.card;
+                document.getElementById('site').value = item.shop;
+                showSection('dashboard');
+            }
         }
 
         function deleteHistoryItem(index) {
