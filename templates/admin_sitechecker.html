@@ -89,6 +89,7 @@
         let workingSites = [];
         let massTesting = false;
         let stopMassTesting = false;
+        let currentTestIndex = 0;
 
         async function testSingleSite() {
             const url = document.getElementById('testSiteUrl').value.trim();
@@ -117,7 +118,7 @@
                             <i class="fas fa-check-circle text-green-600 text-2xl mr-3"></i>
                             <div>
                                 <p class="font-bold text-green-800">✅ Site Working</p>
-                                <p class="text-sm text-green-700">${result.response}</p>
+                                <p class="text-sm text-green-700">${result.response || ''}</p>
                                 ${result.auto_added ? '<p class="text-xs text-green-600 mt-1">✅ Auto-added to database</p>' : ''}
                             </div>
                         </div>
@@ -165,9 +166,11 @@
 
             massTesting = true;
             stopMassTesting = false;
+            currentTestIndex = 0;
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing...';
             stopBtn.classList.remove('hidden');
+            stopBtn.disabled = false;
             progressDiv.classList.remove('hidden');
             resultsDiv.innerHTML = '';
 
@@ -177,11 +180,11 @@
             let working = 0;
             let notWorking = 0;
 
-            for (let i = 0; i < urls.length && massTesting && !stopMassTesting; i++) {
-                const url = urls[i];
+            for (currentTestIndex = 0; currentTestIndex < urls.length && massTesting && !stopMassTesting; currentTestIndex++) {
+                const url = urls[currentTestIndex];
                 
                 document.getElementById('massSiteTotal').textContent = total;
-                document.getElementById('massSiteProgressBar').style.width = `${((i + 1) / total) * 100}%`;
+                document.getElementById('massSiteProgressBar').style.width = `${((currentTestIndex + 1) / total) * 100}%`;
 
                 try {
                     const response = await fetch(`/admin/sitechecker/test?url=${encodeURIComponent(url)}`);
@@ -198,7 +201,7 @@
                                     <i class="fas fa-check-circle text-green-600 mr-2"></i>
                                     <span class="text-sm font-semibold text-green-800">${url}</span>
                                 </div>
-                                <span class="text-xs text-green-700">${result.response}</span>
+                                <span class="text-xs text-green-700">${result.response || 'Working'}</span>
                             </div>
                         `;
                     } else {
@@ -225,7 +228,7 @@
                                 <i class="fas fa-times-circle text-red-600 mr-2"></i>
                                 <span class="text-sm text-red-800">${url}</span>
                             </div>
-                            <span class="text-xs text-red-700">Error: ${error.message}</span>
+                            <span class="text-xs text-red-700">Error</span>
                         </div>
                     `;
                     document.getElementById('massSiteNotWorking').textContent = notWorking;
@@ -239,9 +242,11 @@
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-play mr-2"></i>Test All Sites';
             stopBtn.classList.add('hidden');
+            stopBtn.disabled = false;
 
+            const testedCount = stopMassTesting ? currentTestIndex + 1 : total;
             if (stopMassTesting) {
-                alert(`Testing stopped!\nTested: ${i + 1}/${total}\nWorking: ${working}\nDead: ${notWorking}\n\nAll working sites have been auto-added to database.`);
+                alert(`Testing stopped!\nTested: ${testedCount}/${total}\nWorking: ${working}\nDead: ${notWorking}\n\nAll working sites have been auto-added to database.`);
             } else {
                 alert(`Test complete!\nWorking: ${working}\nDead: ${notWorking}\n\nAll working sites have been auto-added to database.`);
             }
@@ -250,6 +255,9 @@
         function stopMassSites() {
             stopMassTesting = true;
             massTesting = false;
+            const stopBtn = document.getElementById('stopMassSitesBtn');
+            stopBtn.disabled = true;
+            stopBtn.innerHTML = '<i class="fas fa-stop mr-2"></i>Stopping...';
         }
     </script>
 </body>

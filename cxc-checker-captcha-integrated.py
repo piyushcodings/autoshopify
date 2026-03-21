@@ -2491,6 +2491,8 @@ def admin_sitechecker_page():
 @app.route('/admin/sitechecker/test', methods=['GET'])
 def admin_sitechecker_test():
     """Test if a site works with captcha solver"""
+    global sites_data
+    
     try:
         site_url = request.args.get('url', '').strip()
         
@@ -2507,25 +2509,11 @@ def admin_sitechecker_test():
             response = session.get(checkout_url, timeout=10)
         except Exception as e:
             # Site is dead/unreachable
-            error_msg = str(e).lower()
-            if 'name resolution' in error_msg or 'failed to resolve' in error_msg:
-                return jsonify({
-                    "working": False,
-                    "status": "dead",
-                    "error": "Site dead (DNS failed)"
-                })
-            elif 'connection' in error_msg or 'timeout' in error_msg:
-                return jsonify({
-                    "working": False,
-                    "status": "dead",
-                    "error": "Site dead (Connection failed)"
-                })
-            else:
-                return jsonify({
-                    "working": False,
-                    "status": "dead",
-                    "error": f"Site dead ({str(e)[:50]})"
-                })
+            return jsonify({
+                "working": False,
+                "status": "dead",
+                "error": "Site dead"
+            })
         
         # Step 2: Check if captcha is present
         captcha_detected = 'recaptcha' in response.text.lower() or 'hcaptcha' in response.text.lower()
@@ -2536,6 +2524,9 @@ def admin_sitechecker_test():
             if captcha_token:
                 # Site is working with captcha solved
                 # Auto-add to database
+                if 'sites' not in sites_data:
+                    sites_data['sites'] = []
+                    
                 sites_data['sites'].append({
                     "url": site_url,
                     "price": "0.00",
@@ -2548,9 +2539,7 @@ def admin_sitechecker_test():
                 return jsonify({
                     "working": True,
                     "status": "working",
-                    "captcha_detected": True,
-                    "captcha_solved": True,
-                    "response": "Site working (Captcha solved)",
+                    "response": "Site working",
                     "auto_added": True
                 })
             else:
@@ -2558,13 +2547,14 @@ def admin_sitechecker_test():
                 return jsonify({
                     "working": False,
                     "status": "dead",
-                    "captcha_detected": True,
-                    "captcha_solved": False,
-                    "error": "Site dead (Captcha solving failed)"
+                    "error": "Site dead"
                 })
         else:
             # No captcha required - site is working!
             # Auto-add to database
+            if 'sites' not in sites_data:
+                sites_data['sites'] = []
+                
             sites_data['sites'].append({
                 "url": site_url,
                 "price": "0.00",
@@ -2577,8 +2567,6 @@ def admin_sitechecker_test():
             return jsonify({
                 "working": True,
                 "status": "working",
-                "captcha_detected": False,
-                "captcha_solved": False,
                 "response": "Site working",
                 "auto_added": True
             })
@@ -2587,7 +2575,7 @@ def admin_sitechecker_test():
         return jsonify({
             "working": False,
             "status": "dead",
-            "error": str(e)
+            "error": "Site dead"
         })
 
 
