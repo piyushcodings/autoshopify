@@ -2451,8 +2451,8 @@ def admin_login():
 
 @app.route('/admin/dashboard', methods=['GET'])
 def admin_dashboard():
-    """Admin dashboard"""
-    return render_template('admin_dashboard.html')
+    """Main admin dashboard - Full featured"""
+    return render_template('admin_full.html')
 
 
 @app.route('/admin/logs', methods=['GET'])

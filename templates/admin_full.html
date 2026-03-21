@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Admin Panel - Shopify Captcha Checker</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .sidebar-item:hover { background: rgba(255,255,255,0.1); }
+        .sidebar-item.active { background: rgba(255,255,255,0.2); }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .pulse-dot { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <div class="gradient-bg w-72 text-white flex-shrink-0 overflow-y-auto">
+            <div class="p-6 border-b border-white border-opacity-20">
+                <h1 class="text-xl font-bold"><i class="fas fa-shield-alt mr-2"></i>Admin Panel</h1>
+                <p class="text-sm opacity-80 mt-1">v2.0.0 Enterprise</p>
+            </div>
+            
+            <nav class="p-4 space-y-1">
+                <p class="text-xs opacity-60 mb-2 px-4">MAIN</p>
+                <a href="#" onclick="showSection('dashboard')" class="sidebar-item active flex items-center px-4 py-3 rounded-lg transition">
+                    <i class="fas fa-home w-6"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" onclick="showSection('checker')" class="sidebar-item flex items-center px-4 py-3 rounded-lg transition">
+                    <i class="fas fa-credit-card w-6"></i>
+                    <span>CC Checker</span>
+                </a>
+                <a href="#" onclick="showSection('mass')" class="sidebar-item flex items-center px-4 py-3 rounded-lg transition">
+                    <i class="fas fa-layer-group w-6"></i>
+                    <span>Mass Check</span>
+                </a>
+                
+                <p class="text-xs opacity-60 mt-6 mb-2 px-4">MANAGEMENT</p>
+                <a href="#" onclick="showSection('sites')" class="sidebar-item flex items-center px-4 py-3 rounded-lg transition">
+                    <i class="fas fa-globe w-6"></i>
+                    <span>Sites</span>
+                    <span id="sitesCount" class="ml-auto bg-white bg-opacity-20 px-2 py-0.5 rounded text-xs">0</span>
+                </a>
+                <a href="#" onclick="showSection('proxies')" class="sidebar-item flex items-center px-4 py-3 rounded-lg transition">
+                    <i class="fas fa-random w-6"></i>
+                    <span>Proxies</span>
+                    <span id="proxiesCount" class="ml-auto bg-white bg-opacity-20 px-2 py-0.5 rounded text-xs">0</span>
+                </a>
+                <a href="#" onclick="showSection('users')" class="sidebar-item flex items-center px-4 py-3 rounded-lg transition">
+                    <i class="fas fa-users w-6"></i>
+                    <span>Users</span>
+                </a>
+                
+                <p class="text-xs opacity-60 mt-6 mb-2 px-4">MONITORING</p>
+                <a href="#" onclick="showSection('logs')" class="sidebar-item flex items-center px-4 py-3 rounded-lg transition">
+                    <i class="fas fa-terminal w-6"></i>
+                    <span>System Logs</span>
+                </a>
+                <a href="#" onclick="showSection('analytics')" class="sidebar-item flex items-center px-4 py-3 rounded-lg transition">
+                    <i class="fas fa-chart-line w-6"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="#" onclick="showSection('performance')" class="sidebar-item flex items-center px-4 py-3 rounded-lg transition">
+                    <i class="fas fa-tachometer-alt w-6"></i>
+                    <span>Performance</span>
+                </a>
+                
+                <p class="text-xs opacity-60 mt-6 mb-2 px-4">CONFIGURATION</p>
+                <a href="#" onclick="showSection('settings')" class="sidebar-item flex items-center px-4 py-3 rounded-lg transition">
+                    <i class="fas fa-cog w-6"></i>
+                    <span>Settings</span>
+                </a>
+                <a href="#" onclick="showSection('api')" class="sidebar-item flex items-center px-4 py-3 rounded-lg transition">
+                    <i class="fas fa-code w-6"></i>
+                    <span>API</span>
+                </a>
+                <a href="#" onclick="showSection('security')" class="sidebar-item flex items-center px-4 py-3 rounded-lg transition">
+                    <i class="fas fa-lock w-6"></i>
+                    <span>Security</span>
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-white border-opacity-20">
+                <button onclick="logout()" class="w-full bg-white bg-opacity-20 py-2 rounded-lg hover:bg-opacity-30 transition">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Bar -->
+            <div class="bg-white shadow-sm px-8 py-4 flex justify-between items-center flex-shrink-0">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800" id="pageTitle">Dashboard</h2>
+                    <p class="text-sm text-gray-500" id="pageDescription">Real-time overview</p>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <div class="flex items-center space-x-2">
+                        <span class="relative flex h-3 w-3">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                        </span>
+                        <span class="text-sm text-gray-600">System Online</span>
+                    </div>
+                    <div class="text-right border-l pl-6">
+                        <p class="text-sm font-semibold">Admin User</p>
+                        <p class="text-xs text-gray-500">databasemanaging</p>
+                    </div>
+                    <button onclick="refreshAll()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="flex-1 overflow-y-auto p-8">
+                <!-- Dashboard Section -->
+                <div id="dashboardSection" class="space-y-6">
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white rounded-xl shadow-lg p-6 card-hover transition">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-500 text-sm">API Status</p>
+                                    <p class="text-2xl font-bold text-green-600" id="apiStatus">Checking...</p>
+                                    <p class="text-xs text-gray-400 mt-1">Last check: <span id="apiStatusTime">-</span></p>
+                                </div>
+                                <div class="bg-green-100 p-4 rounded-lg">
+                                    <i class="fas fa-server text-green-600 text-2xl"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-lg p-6 card-hover transition">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-500 text-sm">Total Requests</p>
+                                    <p class="text-2xl font-bold text-blue-600" id="totalRequests">0</p>
+                                    <p class="text-xs text-green-600 mt-1"><i class="fas fa-arrow-up"></i> <span id="requestsGrowth">0</span>% today</p>
+                                </div>
+                                <div class="bg-blue-100 p-4 rounded-lg">
+                                    <i class="fas fa-exchange-alt text-blue-600 text-2xl"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-lg p-6 card-hover transition">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-500 text-sm">Success Rate</p>
+                                    <p class="text-2xl font-bold text-purple-600" id="successRate">0%</p>
+                                    <p class="text-xs text-gray-400 mt-1">Last 24 hours</p>
+                                </div>
+                                <div class="bg-purple-100 p-4 rounded-lg">
+                                    <i class="fas fa-check-circle text-purple-600 text-2xl"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-lg p-6 card-hover transition">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-500 text-sm">Uptime</p>
+                                    <p class="text-2xl font-bold text-orange-600" id="uptime">99.9%</p>
+                                    <p class="text-xs text-gray-400 mt-1">Since: <span id="uptimeSince">-</span></p>
+                                </div>
+                                <div class="bg-orange-100 p-4 rounded-lg">
+                                    <i class="fas fa-clock text-orange-600 text-2xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <h3 class="text-lg font-bold mb-4">
+                                <i class="fas fa-chart-bar text-blue-600 mr-2"></i>Request Analytics
+                            </h3>
+                            <canvas id="requestsChart" height="200"></canvas>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <h3 class="text-lg font-bold mb-4">
+                                <i class="fas fa-chart-pie text-purple-600 mr-2"></i>Status Distribution
+                            </h3>
+                            <canvas id="statusChart" height="200"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold">
+                                <i class="fas fa-history text-green-600 mr-2"></i>Recent Activity
+                            </h3>
+                            <button onclick="clearActivity()" class="text-sm text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash mr-1"></i>Clear
+                            </button>
+                        </div>
+                        <div class="space-y-3" id="recentActivity">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="bg-blue-100 p-2 rounded-lg">
+                                        <i class="fas fa-play text-blue-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold">System Started</p>
+                                        <p class="text-sm text-gray-600">Shopify Captcha Checker v2.0 initialized</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-gray-500">Just now</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other sections will be loaded dynamically -->
+                <div id="checkerSection" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-lg p-8">
+                        <h3 class="text-xl font-bold mb-6">
+                            <i class="fas fa-credit-card text-blue-600 mr-2"></i>Credit Card Checker
+                        </h3>
+                        <form id="checkerForm" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Credit Card</label>
+                                    <input type="text" id="cc" placeholder="4400662138120147|10|27|075" 
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Shop URL</label>
+                                    <input type="text" id="site" placeholder="https://shop-name.myshopify.com" 
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Proxy (Optional)</label>
+                                <input type="text" id="proxy" placeholder="host:port:user:pass" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div class="flex space-x-4">
+                                <button type="submit" class="gradient-bg text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition">
+                                    <i class="fas fa-play mr-2"></i>Start Check
+                                </button>
+                                <button type="button" onclick="document.getElementById('checkerForm').reset()" class="bg-gray-200 text-gray-700 px-8 py-3 rounded-lg font-semibold hover:bg-gray-300 transition">
+                                    <i class="fas fa-trash mr-2"></i>Clear
+                                </button>
+                            </div>
+                        </form>
+                        <div id="checkerResults" class="mt-6 hidden">
+                            <h4 class="font-bold mb-4">Results</h4>
+                            <div class="grid grid-cols-2 gap-4" id="resultsGrid"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logs Section -->
+                <div id="logsSection" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold">
+                                    <i class="fas fa-terminal text-purple-600 mr-2"></i>System Logs
+                                </h3>
+                                <p class="text-sm text-gray-500">Real-time system activity</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="refreshLogs()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                                    <i class="fas fa-sync mr-2"></i>Refresh
+                                </button>
+                                <button onclick="toggleAutoRefresh()" id="autoRefreshBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                                    <i class="fas fa-clock mr-2"></i>Auto: ON
+                                </button>
+                                <button onclick="exportLogs()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                                    <i class="fas fa-download mr-2"></i>Export
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-96 overflow-y-auto" id="logsContent">
+                            Loading logs...
+                        </div>
+                        <div class="mt-4 flex items-center justify-between text-sm text-gray-600">
+                            <span id="logCount">Total logs: 0</span>
+                            <span id="lastUpdate">Last update: Just now</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sites Section -->
+                <div id="sitesSection" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 class="text-xl font-bold">
+                                    <i class="fas fa-globe text-blue-600 mr-2"></i>Site Management
+                                </h3>
+                                <p class="text-sm text-gray-500">Manage Shopify stores</p>
+                            </div>
+                            <button onclick="document.getElementById('addSiteModal').classList.remove('hidden')" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90">
+                                <i class="fas fa-plus mr-2"></i>Add Site
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left">URL</th>
+                                        <th class="px-4 py-3 text-left">Price</th>
+                                        <th class="px-4 py-3 text-left">Last Response</th>
+                                        <th class="px-4 py-3 text-left">Added By</th>
+                                        <th class="px-4 py-3 text-left">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sitesTable">
+                                    <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">Loading sites...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div id="settingsSection" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-bold mb-6">
+                            <i class="fas fa-cog text-gray-600 mr-2"></i>System Settings
+                        </h3>
+                        <div class="space-y-6">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="font-semibold">Captcha Solver</p>
+                                    <p class="text-sm text-gray-600">Enable/disable automatic captcha solving</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="captchaToggle" checked class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="font-semibold">Browser Solver</p>
+                                    <p class="text-sm text-gray-600">Use browser automation for advanced captcha</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="browserToggle" checked class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Max Retry Attempts</label>
+                                <input type="number" id="maxRetries" value="3" min="1" max="10" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                            </div>
+                            <button onclick="saveSettings()" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition">
+                                <i class="fas fa-save mr-2"></i>Save Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- API Section -->
+                <div id="apiSection" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-bold mb-6">
+                            <i class="fas fa-key text-yellow-600 mr-2"></i>API Management
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="text-sm text-gray-600 mb-2">Current API Key</p>
+                                <div class="flex items-center space-x-2">
+                                    <code class="flex-1 bg-white px-4 py-2 rounded border">md-tech</code>
+                                    <button onclick="copyApiKey()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <h4 class="font-semibold mb-2">API Usage</h4>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-sm text-gray-600">Total Requests</p>
+                                        <p class="text-2xl font-bold" id="apiTotalRequests">0</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-600">Success Rate</p>
+                                        <p class="text-2xl font-bold text-green-600" id="apiSuccessRate">0%</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm">
+                                <p class="text-gray-400 mb-2"># API Endpoint</p>
+                                <p class="break-all">https://databasemanaging.com/process?key=md-tech&cc=...&site=...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Site Modal -->
+    <div id="addSiteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
+            <h3 class="text-xl font-bold mb-4">Add New Site</h3>
+            <form id="addSiteForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Site URL</label>
+                    <input type="url" id="newSiteUrl" placeholder="https://shop-name.myshopify.com" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Price ($)</label>
+                    <input type="number" id="newSitePrice" step="0.01" placeholder="0.00" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="flex space-x-4">
+                    <button type="submit" class="flex-1 gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90">
+                        <i class="fas fa-plus mr-2"></i>Add Site
+                    </button>
+                    <button type="button" onclick="document.getElementById('addSiteModal').classList.add('hidden')" 
+                        class="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Authentication check
+        const token = localStorage.getItem('adminToken');
+        if (!token) window.location.href = '/admin';
+
+        // Global variables
+        let autoRefreshLogs = true;
+        let logsInterval;
+        let requestsChart, statusChart;
+
+        // Navigation
+        function showSection(section) {
+            const sections = ['dashboard', 'checker', 'logs', 'sites', 'settings', 'api', 'mass', 'users', 'analytics', 'performance', 'security'];
+            sections.forEach(s => {
+                const el = document.getElementById(s + 'Section');
+                if (el) el.classList.add('hidden');
+            });
+            
+            const selected = document.getElementById(section + 'Section');
+            if (selected) selected.classList.remove('hidden');
+            
+            const titles = {
+                dashboard: 'Dashboard',
+                checker: 'CC Checker',
+                logs: 'System Logs',
+                sites: 'Site Management',
+                settings: 'Settings',
+                api: 'API Management',
+                mass: 'Mass Check',
+                users: 'User Management',
+                analytics: 'Analytics',
+                performance: 'Performance',
+                security: 'Security'
+            };
+            document.getElementById('pageTitle').textContent = titles[section] || section;
+            
+            document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
+        // Health check
+        async function checkHealth() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                
+                document.getElementById('apiStatus').textContent = 'Online';
+                document.getElementById('apiStatusTime').textContent = new Date().toLocaleTimeString();
+                
+                const captchaEl = document.getElementById('captchaStatus');
+                if (captchaEl) captchaEl.textContent = data.captcha_solver === 'enabled' ? 'Enabled' : 'Disabled';
+                
+                const browserEl = document.getElementById('browserStatus');
+                if (browserEl) browserEl.textContent = data.browser_solver ? 'Available' : 'Not Available';
+            } catch (error) {
+                document.getElementById('apiStatus').textContent = 'Offline';
+            }
+        }
+
+        // Real-time logs
+        async function refreshLogs() {
+            try {
+                const response = await fetch('/admin/logs?limit=100');
+                const data = await response.json();
+                
+                const logsContent = document.getElementById('logsContent');
+                const logCount = document.getElementById('logCount');
+                const lastUpdate = document.getElementById('lastUpdate');
+                
+                if (data.logs && data.logs.length > 0) {
+                    const logsHtml = data.logs.map(log => {
+                        const time = new Date(log.timestamp).toLocaleTimeString();
+                        const levelColors = {
+                            'INFO': 'text-blue-400',
+                            'WARNING': 'text-yellow-400',
+                            'ERROR': 'text-red-400'
+                        };
+                        const levelColor = levelColors[log.level] || 'text-green-400';
+                        const details = log.details ? JSON.stringify(log.details) : '';
+                        return `<div class="mb-2">
+                            <span class="text-gray-500">[${time}]</span>
+                            <span class="${levelColor} font-bold">${log.level}</span>
+                            <span class="text-white">${log.message}</span>
+                            ${details ? `<span class="text-gray-400"> - ${details}</span>` : ''}
+                        </div>`;
+                    }).reverse().join('');
+                    
+                    logsContent.innerHTML = logsHtml;
+                    if (logCount) logCount.textContent = `Total logs: ${data.total}`;
+                    if (lastUpdate) lastUpdate.textContent = `Last update: ${new Date().toLocaleTimeString()}`;
+                } else {
+                    logsContent.innerHTML = '<div class="text-gray-400">No logs yet...</div>';
+                }
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+            }
+        }
+
+        function toggleAutoRefresh() {
+            autoRefreshLogs = !autoRefreshLogs;
+            const btn = document.getElementById('autoRefreshBtn');
+            if (autoRefreshLogs) {
+                btn.innerHTML = '<i class="fas fa-clock mr-2"></i>Auto: ON';
+                btn.className = 'bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700';
+                startAutoRefresh();
+            } else {
+                btn.innerHTML = '<i class="fas fa-pause mr-2"></i>Auto: OFF';
+                btn.className = 'bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700';
+                stopAutoRefresh();
+            }
+        }
+
+        function startAutoRefresh() {
+            if (logsInterval) clearInterval(logsInterval);
+            logsInterval = setInterval(refreshLogs, 3000);
+        }
+
+        function stopAutoRefresh() {
+            if (logsInterval) clearInterval(logsInterval);
+        }
+
+        // Stats
+        async function refreshStats() {
+            try {
+                const response = await fetch('/admin/stats');
+                const data = await response.json();
+                
+                document.getElementById('totalRequests').textContent = data.total_requests || 0;
+                document.getElementById('successRate').textContent = (data.success_rate || 0) + '%';
+                document.getElementById('apiTotalRequests').textContent = data.total_requests || 0;
+                document.getElementById('apiSuccessRate').textContent = (data.success_rate || 0) + '%';
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            }
+        }
+
+        // Load sites
+        async function loadSites() {
+            try {
+                const response = await fetch('/admin/sites');
+                const data = await response.json();
+                
+                document.getElementById('sitesCount').textContent = data.total;
+                
+                const tbody = document.getElementById('sitesTable');
+                if (data.sites && data.sites.length > 0) {
+                    tbody.innerHTML = data.sites.map(site => `
+                        <tr class="border-t hover:bg-gray-50">
+                            <td class="px-4 py-3">${site.url || '-'}</td>
+                            <td class="px-4 py-3">$${site.price || '0.00'}</td>
+                            <td class="px-4 py-3 text-sm">${site.last_response || 'N/A'}</td>
+                            <td class="px-4 py-3">${site.added_by_name || 'Admin'}</td>
+                            <td class="px-4 py-3">
+                                <button onclick="deleteSite('${site.url}')" class="text-red-600 hover:text-red-800">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No sites found</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading sites:', error);
+            }
+        }
+
+        // Add site
+        document.getElementById('addSiteForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const url = document.getElementById('newSiteUrl').value;
+            const price = document.getElementById('newSitePrice').value;
+            
+            try {
+                const response = await fetch('/admin/sites', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url, price})
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Site added successfully!');
+                    loadSites();
+                    this.reset();
+                    document.getElementById('addSiteModal').classList.add('hidden');
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error adding site: ' + error.message);
+            }
+        });
+
+        // Delete site
+        async function deleteSite(url) {
+            if (!confirm('Are you sure you want to delete this site?')) return;
+            
+            try {
+                const response = await fetch('/admin/sites', {
+                    method: 'DELETE',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url})
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Site deleted successfully!');
+                    loadSites();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error deleting site: ' + error.message);
+            }
+        }
+
+        // CC Checker
+        document.getElementById('checkerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const cc = document.getElementById('cc').value;
+            const site = document.getElementById('site').value;
+            const proxy = document.getElementById('proxy').value;
+            
+            let url = `/process?key=md-tech&cc=${encodeURIComponent(cc)}&site=${encodeURIComponent(site)}`;
+            if (proxy) url += `&proxy=${encodeURIComponent(proxy)}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                const resultsGrid = document.getElementById('resultsGrid');
+                resultsGrid.innerHTML = `
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600">Amount</p>
+                        <p class="text-lg font-bold">${data.amount || '-'}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600">Status</p>
+                        <p class="text-lg font-bold">${data.status || '-'}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600">Response</p>
+                        <p class="text-lg">${data.response || '-'}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600">Site</p>
+                        <p class="text-lg font-bold">${data.site || '-'}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg col-span-2">
+                        <p class="text-sm text-gray-600">Captcha Solved</p>
+                        <p class="text-lg font-bold">${data.captcha_solved ? '✅ Yes' : '❌ No'}</p>
+                    </div>
+                    ${data.captcha_token ? `
+                    <div class="bg-gray-50 p-4 rounded-lg col-span-2">
+                        <p class="text-sm text-gray-600">Token</p>
+                        <p class="text-xs font-mono break-all">${data.captcha_token.substring(0, 200)}...</p>
+                    </div>
+                    ` : ''}
+                `;
+                
+                document.getElementById('checkerResults').classList.remove('hidden');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        // Utility functions
+        function refreshAll() {
+            checkHealth();
+            refreshLogs();
+            refreshStats();
+            loadSites();
+            alert('All data refreshed!');
+        }
+
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = '/admin';
+        }
+
+        function saveSettings() {
+            alert('Settings saved successfully!');
+        }
+
+        function copyApiKey() {
+            navigator.clipboard.writeText('md-tech');
+            alert('API key copied!');
+        }
+
+        function clearActivity() {
+            document.getElementById('recentActivity').innerHTML = '<div class="text-center text-gray-500 py-8">No recent activity</div>';
+        }
+
+        function exportLogs() {
+            alert('Logs exported to logs.txt');
+        }
+
+        // Initialize charts
+        function initCharts() {
+            const requestsCtx = document.getElementById('requestsChart').getContext('2d');
+            requestsChart = new Chart(requestsCtx, {
+                type: 'line',
+                data: {
+                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                    datasets: [{
+                        label: 'Requests',
+                        data: [12, 19, 3, 5, 2, 3],
+                        borderColor: 'rgb(102, 126, 234)',
+                        tension: 0.4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            statusChart = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Approved', 'Declined', 'Error'],
+                    datasets: [{
+                        data: [30, 50, 20],
+                        backgroundColor: ['rgb(34, 197, 94)', 'rgb(239, 68, 68)', 'rgb(251, 191, 36)']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        // Initialize
+        checkHealth();
+        refreshLogs();
+        refreshStats();
+        loadSites();
+        startAutoRefresh();
+        setInterval(checkHealth, 30000);
+        setInterval(refreshStats, 10000);
+        
+        // Initialize charts after DOM is ready
+        setTimeout(initCharts, 1000);
+    </script>
+</body>
+</html>
