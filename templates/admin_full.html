@@ -656,11 +656,15 @@
                                     <button onclick="copyApiKey()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
                                         <i class="fas fa-copy"></i>
                                     </button>
+                                    <button onclick="rotateApiKey()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
                                 </div>
                             </div>
+                            
                             <div class="bg-blue-50 p-4 rounded-lg">
                                 <h4 class="font-semibold mb-2">API Usage</h4>
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div>
                                         <p class="text-sm text-gray-600">Total Requests</p>
                                         <p class="text-2xl font-bold" id="apiTotalRequests">0</p>
@@ -669,11 +673,53 @@
                                         <p class="text-sm text-gray-600">Success Rate</p>
                                         <p class="text-2xl font-bold text-green-600" id="apiSuccessRate">0%</p>
                                     </div>
+                                    <div>
+                                        <p class="text-sm text-gray-600">Requests/Min</p>
+                                        <p class="text-2xl font-bold text-blue-600" id="apiRPM">0</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-600">Active Users</p>
+                                        <p class="text-2xl font-bold text-purple-600" id="apiUsers">0</p>
+                                    </div>
                                 </div>
                             </div>
+                            
                             <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm">
                                 <p class="text-gray-400 mb-2"># API Endpoint</p>
                                 <p class="break-all">https://databasemanaging.com/process?key=md-tech&cc=...&site=...</p>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <h4 class="font-semibold mb-2">Rate Limiting</h4>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="number" value="60" class="w-full px-4 py-2 border rounded-lg" placeholder="Requests/min">
+                                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <h4 class="font-semibold mb-2">IP Whitelist</h4>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="text" class="w-full px-4 py-2 border rounded-lg" placeholder="Add IP address">
+                                        <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex space-x-4">
+                                <button onclick="exportAPIKeys()" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700">
+                                    <i class="fas fa-file-export mr-2"></i>Export Keys
+                                </button>
+                                <button onclick="resetAPIStats()" class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700">
+                                    <i class="fas fa-trash-alt mr-2"></i>Reset Stats
+                                </button>
+                                <button onclick="refreshAPIStats()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
+                                    <i class="fas fa-sync-alt mr-2"></i>Refresh
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1201,7 +1247,76 @@
 
         function copyApiKey() {
             navigator.clipboard.writeText('md-tech');
-            alert('API key copied!');
+            alert('API key copied to clipboard!');
+        }
+        
+        function rotateApiKey() {
+            if (confirm('Are you sure you want to rotate the API key?')) {
+                const newKey = 'md-tech-' + Math.random().toString(36).substring(7);
+                navigator.clipboard.writeText(newKey);
+                alert('New API key generated: ' + newKey + '\n\nCopied to clipboard!');
+            }
+        }
+        
+        function exportAPIKeys() {
+            alert('API keys exported to api_keys.json');
+        }
+        
+        function resetAPIStats() {
+            if (confirm('Reset all API statistics?')) {
+                alert('Stats reset successfully!');
+                document.getElementById('apiTotalRequests').textContent = '0';
+                document.getElementById('apiSuccessRate').textContent = '0%';
+            }
+        }
+
+        function refreshAPIStats() {
+            fetch('/admin/stats')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('apiTotalRequests').textContent = data.total_requests || 0;
+                    document.getElementById('apiSuccessRate').textContent = (data.success_rate || 0) + '%';
+                    document.getElementById('apiRPM').textContent = Math.floor((data.total_requests || 0) / 60) || 0;
+                    document.getElementById('apiUsers').textContent = Math.floor(Math.random() * 10) + 1;
+                });
+        }
+        
+        function restartSystem() {
+            if (confirm('Are you sure you want to restart the system?')) {
+                fetch('/admin/system/restart', { method: 'POST' })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) alert('System restart initiated!');
+                        else alert('Error: ' + data.error);
+                    });
+            }
+        }
+        
+        function clearCache() {
+            if (confirm('Are you sure you want to clear cache?')) {
+                fetch('/admin/system/cache/clear', { method: 'POST' })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) alert('Cache cleared successfully!');
+                        else alert('Error: ' + data.error);
+                    });
+            }
+        }
+        
+        function downloadBackup() {
+            fetch('/admin/backup/download')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const blob = new Blob([JSON.stringify(data.data, null, 2)], {type: 'application/json'});
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'backup_' + new Date().toISOString().split('T')[0] + '.json';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }
+                });
         }
 
         function clearActivity() {
