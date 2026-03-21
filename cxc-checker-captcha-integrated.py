@@ -2485,6 +2485,75 @@ def get_stats():
     })
 
 
+@app.route('/admin/sites', methods=['GET'])
+def get_sites():
+    """Get all sites"""
+    return jsonify({
+        "sites": sites_data.get('sites', []),
+        "total": len(sites_data.get('sites', []))
+    })
+
+
+@app.route('/admin/sites', methods=['POST'])
+def add_site():
+    """Add a new site"""
+    data = request.get_json()
+    url = data.get('url')
+    price = data.get('price', '0.00')
+    
+    if not url:
+        return jsonify({"success": False, "error": "URL is required"}), 400
+    
+    # Check if site already exists
+    if any(site['url'] == url for site in sites_data['sites']):
+        return jsonify({"success": False, "error": "Site already exists"}), 400
+    
+    # Add site
+    sites_data['sites'].append({
+        "url": url,
+        "price": price,
+        "added_by": "admin",
+        "added_by_name": "Admin User",
+        "last_response": "Not tested"
+    })
+    
+    # Save to JSON storage
+    save_json(SITES_FILE, sites_data)
+    
+    add_log("INFO", "Site added", {"url": url, "price": price})
+    
+    return jsonify({"success": True, "message": "Site added successfully"})
+
+
+@app.route('/admin/sites', methods=['DELETE'])
+def delete_site():
+    """Delete a site"""
+    data = request.get_json()
+    url = data.get('url')
+    
+    if not url:
+        return jsonify({"success": False, "error": "URL is required"}), 400
+    
+    # Remove site
+    sites_data['sites'] = [s for s in sites_data['sites'] if s['url'] != url]
+    
+    # Save to JSON storage
+    save_json(SITES_FILE, sites_data)
+    
+    add_log("INFO", "Site deleted", {"url": url})
+    
+    return jsonify({"success": True, "message": "Site deleted successfully"})
+
+
+@app.route('/admin/proxies', methods=['GET'])
+def get_proxies():
+    """Get all proxies"""
+    return jsonify({
+        "proxies": proxies_data.get('proxies', []),
+        "total": len(proxies_data.get('proxies', []))
+    })
+
+
 @app.route('/', methods=['GET'])
 def home_page():
     """Redirect to admin login"""
